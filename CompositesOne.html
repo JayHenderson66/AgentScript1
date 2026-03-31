@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Composites One – Customer Service Agent Script</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+<!-- Genesys Cloud SDKs -->
+<script src="https://sdk-cdn.mypurecloud.com/client-apps/latest/purecloud-client-app-sdk.js"></script>
+<script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONFIGURATION  —  loaded from localStorage, set via wizard
+═══════════════════════════════════════════════════════════ */
+const STORAGE_KEY = 'gc_widget_config_compositesone';
+
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return { clientId: '', environment: 'mypurecloud.com' };
+}
+
+function saveConfig(cfg) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch(e) {}
+}
+
+const GC_CONFIG = loadConfig();
+/* ═══════════════════════════════════════════════════════════ */
+</script>
+<style>
+:root {
+  --navy:      #0f2044;
+  --navy-mid:  #1a3261;
+  --orange:    #f47920;
+  --orange-dk: #d4620e;
+  --cream:     #f5f3ef;
+  --white:     #ffffff;
+  --gray-100:  #eef0f3;
+  --gray-200:  #d8dce3;
+  --gray-500:  #6b7a90;
+  --gray-700:  #3d4a5c;
+  --green:     #1e8c5a;
+  --green-lt:  #e3f5ed;
+  --amber:     #d97706;
+  --amber-lt:  #fef3cd;
+  --red:       #c0392b;
+  --red-lt:    #fde8e6;
+  --blue:      #1a6db5;
+  --blue-lt:   #e5f0fb;
+  --radius:    10px;
+  --shadow:    0 3px 12px rgba(15,32,68,0.10);
+  --shadow-lg: 0 8px 28px rgba(15,32,68,0.16);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--cream);
+  font-family: 'Barlow', sans-serif;
+  color: var(--gray-700);
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ─── TOPBAR ─────────────────────────────────────────────── */
+.topbar {
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-logo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--white);
+  line-height: 1;
+}
+.brand-logo span { color: var(--orange); }
+.brand-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255,255,255,0.2);
+}
+.brand-subtitle {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.6);
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #2ecc71;
+  box-shadow: 0 0 6px rgba(46,204,113,0.7);
+}
+
+/* ─── SEARCH HERO ────────────────────────────────────────── */
+.search-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.search-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--orange);
+  white-space: nowrap;
+}
+.search-box-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+}
+.search-box {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,0.08);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border 0.2s, background 0.2s;
+}
+.search-box::placeholder { color: rgba(255,255,255,0.4); }
+.search-box:focus {
+  border-color: var(--orange);
+  background: rgba(255,255,255,0.12);
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,0.4);
+  font-size: 1rem;
+  pointer-events: none;
+}
+.search-results-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  max-height: 280px;
+  overflow-y: auto;
+  display: none;
+  border: 1px solid var(--gray-200);
+}
+.search-results-dropdown.open { display: block; }
+.search-result-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: var(--gray-100); }
+.sri-company { font-weight: 600; color: var(--navy); font-size: 0.9rem; }
+.sri-detail { font-size: 0.8rem; color: var(--gray-500); }
+.sri-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--blue-lt);
+  color: var(--blue);
+  white-space: nowrap;
+}
+.search-no-results {
+  padding: 14px;
+  color: var(--gray-500);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+/* ─── MAIN LAYOUT ────────────────────────────────────────── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  min-height: calc(100vh - 52px - 62px);
+}
+
+/* ─── LEFT PANEL ─────────────────────────────────────────── */
+.left-panel {
+  background: var(--white);
+  border-right: 1px solid var(--gray-200);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.panel-section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 8px;
+}
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.info-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.info-value {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--navy);
+}
+.info-value.empty { color: var(--gray-200); font-style: italic; font-size: 0.82rem; }
+.divider { height: 1px; background: var(--gray-100); margin: 4px 0; }
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.badge-delivered   { background: var(--green-lt); color: var(--green); }
+.badge-shipped     { background: var(--blue-lt);  color: var(--blue); }
+.badge-transit     { background: var(--blue-lt);  color: var(--blue); }
+.badge-partial     { background: var(--amber-lt); color: var(--amber); }
+.badge-delayed     { background: var(--red-lt);   color: var(--red); }
+.badge-hold        { background: var(--red-lt);   color: var(--red); }
+.badge-open        { background: var(--gray-100); color: var(--gray-500); }
+.badge-processing  { background: var(--amber-lt); color: var(--amber); }
+.badge-pending     { background: var(--gray-100); color: var(--gray-500); }
+.badge-preparing   { background: var(--amber-lt); color: var(--amber); }
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ─── TABS ───────────────────────────────────────────────── */
+.tabs-bar {
+  background: var(--white);
+  border-bottom: 2px solid var(--gray-100);
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  overflow-x: auto;
+}
+.tab-btn {
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
+}
+.tab-btn:hover { color: var(--navy); }
+.tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* ─── RIGHT PANEL ────────────────────────────────────────── */
+.right-panel { background: var(--cream); overflow-y: auto; }
+.tab-pane { display: none; padding: 20px; }
+.tab-pane.active { display: block; }
+
+/* ─── CARDS ──────────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--navy);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title-accent { width: 3px; height: 18px; background: var(--orange); border-radius: 2px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px 20px; }
+
+/* ─── DATA FIELDS ────────────────────────────────────────── */
+.field-group { display: flex; flex-direction: column; gap: 3px; }
+.field-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-500);
+}
+.field-value {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--navy);
+  padding: 6px 10px;
+  background: var(--gray-100);
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
+  min-height: 34px;
+  word-break: break-word;
+}
+.field-value.empty { color: var(--gray-200); font-style: italic; }
+.field-value a { color: var(--blue); text-decoration: none; }
+.field-value a:hover { text-decoration: underline; }
+
+/* ─── SHIPMENT TABLE ─────────────────────────────────────── */
+.sh-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.sh-table th {
+  background: var(--navy);
+  color: rgba(255,255,255,0.8);
+  padding: 8px 12px;
+  text-align: left;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.sh-table th:first-child { border-radius: 6px 0 0 6px; }
+.sh-table th:last-child  { border-radius: 0 6px 6px 0; }
+.sh-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+  vertical-align: middle;
+}
+.sh-table tr:last-child td { border-bottom: none; }
+.sh-table tr:hover td { background: var(--gray-100); }
+
+/* ─── CHECKLIST ──────────────────────────────────────────── */
+.check-list { display: flex; flex-direction: column; gap: 10px; }
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--gray-100);
+  border-radius: 8px;
+  border-left: 3px solid var(--gray-200);
+  transition: background 0.15s, border-color 0.15s;
+  cursor: pointer;
+}
+.check-item.checked {
+  background: var(--green-lt);
+  border-left-color: var(--green);
+}
+.check-item input[type=checkbox] {
+  width: 16px; height: 16px;
+  accent-color: var(--green);
+  margin-top: 1px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.check-text { font-size: 0.88rem; line-height: 1.4; }
+.check-item.checked .check-text { color: var(--green); }
+
+/* ─── CALL SCRIPT BLOCK ──────────────────────────────────── */
+.script-block {
+  background: var(--navy);
+  border-left: 4px solid var(--orange);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.script-block-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 5px;
+}
+.script-block-text {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.88);
+  font-style: italic;
+}
+
+/* ─── ESCALATION ─────────────────────────────────────────── */
+.escalation-panel {
+  display: none;
+  background: var(--red-lt);
+  border: 1px solid #f5b7b1;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+.escalation-panel.open { display: block; }
+.esc-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--red);
+  transition: background 0.15s;
+}
+.esc-option:hover { background: rgba(192,57,43,0.1); }
+
+/* ─── BUTTONS ────────────────────────────────────────────── */
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-orange  { background: var(--orange); color: var(--white); }
+.btn-navy    { background: var(--navy);   color: var(--white); }
+.btn-danger  { background: var(--red);    color: var(--white); }
+.btn-ghost   { background: var(--gray-100); color: var(--navy); border: 1px solid var(--gray-200); }
+.btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+
+/* ─── TIMELINE ───────────────────────────────────────────── */
+.timeline { border-left: 2px solid var(--gray-200); padding-left: 16px; }
+.tl-event { position: relative; margin-bottom: 16px; padding-bottom: 4px; }
+.tl-event::before {
+  content: '';
+  position: absolute;
+  left: -21px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--orange);
+  border: 2px solid var(--white);
+  box-shadow: 0 0 0 2px var(--orange);
+}
+.tl-date { font-size: 0.72rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; }
+.tl-type {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--blue-lt);
+  color: var(--blue);
+  margin: 3px 0;
+}
+.tl-summary { font-size: 0.88rem; color: var(--gray-700); }
+
+/* ─── TOAST ──────────────────────────────────────────────── */
+.toast-wrap {
+  position: fixed;
+  top: 62px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--navy);
+  color: var(--white);
+  border-left: 4px solid var(--orange);
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.88rem;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.25s, transform 0.25s;
+  max-width: 280px;
+}
+.toast.show { opacity: 1; transform: translateX(0); }
+
+/* ─── EMPTY STATE ────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray-500);
+}
+.empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.3; }
+.empty-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); }
+.empty-sub { font-size: 0.85rem; margin-top: 4px; }
+
+/* ─── PROGRESS BAR ───────────────────────────────────────── */
+.prog-bar-wrap { background: var(--gray-200); border-radius: 999px; height: 6px; margin-top: 4px; }
+.prog-bar { height: 6px; border-radius: 999px; background: var(--orange); transition: width 0.4s; }
+
+/* ─── EXCEPTION BANNER ───────────────────────────────────── */
+.exception-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--red-lt);
+  border: 1px solid #f5b7b1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 0.88rem;
+  color: var(--red);
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  .main-layout { grid-template-columns: 1fr; }
+  .left-panel { border-right: none; border-bottom: 1px solid var(--gray-200); }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── BLIND TRANSFER MODAL ───────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,32,68,0.55);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal-box {
+  background: var(--white);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(15,32,68,0.3);
+  width: 420px;
+  max-width: 95vw;
+  transform: translateY(12px) scale(0.97);
+  transition: transform 0.2s;
+  overflow: hidden;
+}
+.modal-overlay.open .modal-box {
+  transform: translateY(0) scale(1);
+}
+.modal-header {
+  background: var(--navy);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-header-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-header-title span { color: var(--orange); font-size: 1.1rem; }
+.modal-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.modal-close:hover { color: var(--white); }
+.modal-body { padding: 20px; }
+.modal-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+.modal-tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.modal-tab {
+  flex: 1;
+  padding: 8px;
+  background: var(--gray-100);
+  border: none;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.modal-tab.active {
+  background: var(--navy);
+  color: var(--white);
+}
+.modal-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.95rem;
+  color: var(--navy);
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 14px;
+}
+.modal-input:focus { border-color: var(--orange); }
+.modal-hint {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  margin-top: -10px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.modal-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.queue-item {
+  padding: 9px 12px;
+  background: var(--gray-100);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--navy);
+  transition: background 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.queue-item:hover { background: var(--blue-lt); border-color: var(--blue); }
+.queue-item.selected { background: var(--navy); color: var(--white); border-color: var(--navy); }
+.queue-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.transfer-confirm-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.transfer-confirm-btn:hover { background: var(--orange-dk); transform: translateY(-1px); }
+.transfer-confirm-btn:disabled { background: var(--gray-200); color: var(--gray-500); cursor: not-allowed; transform: none; }
+.transfer-status {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+.transfer-status.connecting { display: flex; background: var(--amber-lt); color: var(--amber); }
+.transfer-status.success    { display: flex; background: var(--green-lt); color: var(--green); }
+.transfer-status.error      { display: flex; background: var(--red-lt);   color: var(--red); }
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── SETUP WIZARD ───────────────────────────────────────── */
+.setup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 50, 0.92);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.setup-box {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(15,32,68,0.5);
+  width: 500px;
+  max-width: 95vw;
+  overflow: hidden;
+  animation: setupSlideIn 0.3s ease;
+}
+@keyframes setupSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.setup-header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+  padding: 24px 28px 20px;
+  position: relative;
+}
+.setup-logo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.setup-logo span { color: var(--orange); }
+.setup-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.15;
+}
+.setup-subtitle {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.55);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.setup-body { padding: 24px 28px; }
+.setup-step {
+  margin-bottom: 22px;
+}
+.setup-step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.setup-step-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: var(--white);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.setup-step-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--navy);
+}
+.setup-step-hint {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+.setup-step-hint a {
+  color: var(--blue);
+  text-decoration: none;
+}
+.setup-step-hint a:hover { text-decoration: underline; }
+.setup-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.92rem;
+  color: var(--navy);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.setup-input:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(244,121,32,0.15);
+}
+.setup-input.valid {
+  border-color: var(--green);
+}
+.setup-input.error {
+  border-color: var(--red);
+}
+.setup-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.92rem;
+  color: var(--navy);
+  background: var(--white);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a90' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.setup-select:focus { border-color: var(--orange); }
+.setup-input-note {
+  font-size: 0.74rem;
+  color: var(--gray-500);
+  margin-top: 5px;
+}
+.setup-input-note.ok  { color: var(--green); font-weight: 600; }
+.setup-input-note.err { color: var(--red);   font-weight: 600; }
+.setup-divider { height: 1px; background: var(--gray-100); margin: 4px 0 20px; }
+.setup-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0 28px 24px;
+}
+.setup-save-btn {
+  flex: 1;
+  padding: 13px;
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.setup-save-btn:hover:not(:disabled) { background: var(--orange-dk); transform: translateY(-1px); }
+.setup-save-btn:disabled { background: var(--gray-200); color: var(--gray-500); cursor: not-allowed; }
+.setup-reset-btn {
+  padding: 13px 16px;
+  background: none;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.setup-reset-btn:hover { border-color: var(--red); color: var(--red); }
+.setup-gear-btn {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--navy);
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 1rem;
+  cursor: pointer;
+  z-index: 500;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+.setup-gear-btn:hover { background: var(--orange); color: var(--white); }
+</style>
+</head>
+<body>
+
+<!-- TOASTS -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-logo">COMPOSITES <span>ONE</span></div>
+    <div class="brand-divider"></div>
+    <div class="brand-subtitle">Agent Script · Genesys Cloud</div>
+  </div>
+  <div class="topbar-status" id="topbarStatus">
+    <div class="status-dot" id="statusDot" style="background:#aaa;box-shadow:none;"></div>
+    <span id="statusLabel">Connecting…</span>
+  </div>
+</div>
+
+<!-- SEARCH HERO -->
+<div class="search-hero">
+  <div class="search-label">Customer Lookup</div>
+  <div class="search-box-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-box" id="searchInput" type="text"
+           placeholder="Search by name, company, account#, phone…"
+           autocomplete="off" />
+    <div class="search-results-dropdown" id="searchDropdown"></div>
+  </div>
+  <button class="btn btn-orange" id="clearBtn" style="display:none;" onclick="clearSelection()">✕ Clear</button>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel" id="leftPanel">
+    <div class="empty-state" id="leftEmpty">
+      <div class="empty-icon">👤</div>
+      <div class="empty-title">No Customer Selected</div>
+      <div class="empty-sub">Search above to load a customer</div>
+    </div>
+
+    <div id="leftContent" style="display:none;">
+      <div class="panel-section-title">Account</div>
+      <div class="info-row"><div class="info-label">Contact Name</div><div class="info-value" id="lp-name">—</div></div>
+      <div class="info-row"><div class="info-label">Company</div><div class="info-value" id="lp-company">—</div></div>
+      <div class="info-row"><div class="info-label">Account #</div><div class="info-value" id="lp-acct">—</div></div>
+      <div class="info-row"><div class="info-label">Phone</div><div class="info-value" id="lp-phone">—</div></div>
+      <div class="info-row"><div class="info-label">Email</div><div class="info-value" id="lp-email" style="font-size:0.82rem;">—</div></div>
+
+      <div class="divider"></div>
+      <div class="panel-section-title">Open Orders</div>
+      <div id="lp-orders-list"></div>
+
+      <div class="divider"></div>
+      <div class="panel-section-title">Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px;">
+        <button class="btn btn-navy btn-sm" onclick="switchTab('orders')">📦 View Orders</button>
+        <button class="btn btn-ghost btn-sm" onclick="switchTab('shipments')">🚚 Track Shipments</button>
+        <button class="btn btn-ghost btn-sm" onclick="switchTab('workflow')">✅ Call Workflow</button>
+        <button class="btn btn-danger btn-sm" onclick="escalate()">⚠ Escalate</button>
+        <button class="btn btn-sm" onclick="openTransferModal()"
+                style="background:linear-gradient(135deg,#1a3261,#0f2044);color:var(--white);border:1px solid rgba(244,121,32,0.4);">
+          ↔ Blind Transfer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="tabs-bar">
+      <button class="tab-btn active" data-tab="orders"    onclick="switchTab('orders')">Orders</button>
+      <button class="tab-btn"        data-tab="shipments" onclick="switchTab('shipments')">Shipments</button>
+      <button class="tab-btn"        data-tab="workflow"  onclick="switchTab('workflow')">Call Workflow</button>
+      <button class="tab-btn"        data-tab="script"    onclick="switchTab('script')">Call Script</button>
+      <button class="tab-btn"        data-tab="history"   onclick="switchTab('history')">Interaction History</button>
+    </div>
+
+    <!-- ── ORDERS TAB ─────────────────────────────────── -->
+    <div class="tab-pane active" id="tab-orders">
+      <div id="orders-empty" class="empty-state">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">No Customer Selected</div>
+        <div class="empty-sub">Search for a customer to view their orders</div>
+      </div>
+      <div id="orders-content" style="display:none;"></div>
+    </div>
+
+    <!-- ── SHIPMENTS TAB ──────────────────────────────── -->
+    <div class="tab-pane" id="tab-shipments">
+      <div id="shipments-empty" class="empty-state">
+        <div class="empty-icon">🚚</div>
+        <div class="empty-title">No Customer Selected</div>
+        <div class="empty-sub">Search for a customer to view shipment details</div>
+      </div>
+      <div id="shipments-content" style="display:none;"></div>
+    </div>
+
+    <!-- ── WORKFLOW TAB ───────────────────────────────── -->
+    <div class="tab-pane" id="tab-workflow">
+      <div class="card">
+        <div class="card-title"><div class="card-title-accent"></div>Inbound Order Status Call – Workflow</div>
+        <div class="check-list" id="workflowChecklist">
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Verify caller identity</strong> — Confirm contact name and account number or company name</div>
+          </div>
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Pull up customer record</strong> — Search by name, company, or account number in the lookup above</div>
+          </div>
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Identify the PO or order in question</strong> — Customer should provide their PO number; confirm order status</div>
+          </div>
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Review shipment status</strong> — Check carrier, tracking number, and last event on the Shipments tab</div>
+          </div>
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Check for exceptions or holds</strong> — Look for delivery exceptions, on-hold reasons, or delay flags</div>
+          </div>
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Communicate status to customer</strong> — Provide ETA, tracking link if available, and next steps</div>
+          </div>
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Document the interaction</strong> — Log notes in Genesys Cloud; note any escalations or commitments made</div>
+          </div>
+          <div class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox"><div class="check-text"><strong>Offer resolution or escalation</strong> — If issue cannot be resolved, escalate to sales rep or logistics team</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="resetChecklist()">↺ Reset Checklist</button>
+          <button class="btn btn-danger btn-sm" onclick="escalate()">⚠ Escalate to Supervisor</button>
+        </div>
+
+        <div class="escalation-panel" id="escalationPanel">
+          <div style="font-weight:700;color:var(--red);margin-bottom:8px;font-size:0.9rem;">Select Escalation Reason:</div>
+          <div class="esc-option" onclick="selectEscalation(this)">🚨 Order on hold – credit or pricing issue</div>
+          <div class="esc-option" onclick="selectEscalation(this)">⏳ Significant delivery delay – customer impacted</div>
+          <div class="esc-option" onclick="selectEscalation(this)">📦 Damaged or missing shipment claim</div>
+          <div class="esc-option" onclick="selectEscalation(this)">😠 Customer escalation – dissatisfied caller</div>
+          <div class="esc-option" onclick="selectEscalation(this)">🔁 Request live supervisor transfer</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="card-title-accent"></div>Order Status Reference Guide</div>
+        <table class="sh-table">
+          <thead><tr>
+            <th>Status</th><th>Meaning</th><th>Typical Next Step</th>
+          </tr></thead>
+          <tbody>
+            <tr><td><span class="status-badge badge-open"><span class="badge-dot"></span>Open</span></td><td>Order received, not yet processed</td><td>Confirm receipt; ETA per est. ship date</td></tr>
+            <tr><td><span class="status-badge badge-processing"><span class="badge-dot"></span>Processing</span></td><td>Warehouse preparing order</td><td>Monitor; est. ship date applies</td></tr>
+            <tr><td><span class="status-badge badge-shipped"><span class="badge-dot"></span>Shipped</span></td><td>All items dispatched</td><td>Provide tracking number</td></tr>
+            <tr><td><span class="status-badge badge-partial"><span class="badge-dot"></span>Partially Shipped</span></td><td>Partial fulfillment; balance pending</td><td>Advise on pending items' ETA</td></tr>
+            <tr><td><span class="status-badge badge-transit"><span class="badge-dot"></span>In Transit</span></td><td>Carrier has the shipment</td><td>Share tracking link and last event</td></tr>
+            <tr><td><span class="status-badge badge-delivered"><span class="badge-dot"></span>Delivered</span></td><td>Confirmed delivery on record</td><td>Provide POD name if requested</td></tr>
+            <tr><td><span class="status-badge badge-delayed"><span class="badge-dot"></span>Delayed</span></td><td>Exception or delay flagged</td><td>Communicate reason; offer escalation</td></tr>
+            <tr><td><span class="status-badge badge-hold"><span class="badge-dot"></span>On Hold</span></td><td>Credit or pricing review required</td><td>Escalate to AR or sales rep</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── CALL SCRIPT TAB ─────────────────────────────── -->
+    <div class="tab-pane" id="tab-script">
+      <div class="card">
+        <div class="card-title"><div class="card-title-accent"></div>Opening</div>
+        <div class="script-block">
+          <div class="script-block-label">Answer</div>
+          <div class="script-block-text">"Thank you for calling Composites One Customer Service, this is [Your Name]. How can I help you today?"</div>
+        </div>
+        <div class="script-block">
+          <div class="script-block-label">Verify Identity</div>
+          <div class="script-block-text">"May I have your name and your company name or account number so I can pull up your record?"</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="card-title-accent"></div>Order Status Inquiry</div>
+        <div class="script-block">
+          <div class="script-block-label">Request PO</div>
+          <div class="script-block-text">"Do you have your PO number handy, or do you know the approximate order date? That'll help me locate it quickly."</div>
+        </div>
+        <div class="script-block">
+          <div class="script-block-label">Confirm Status</div>
+          <div class="script-block-text">"I'm showing your order [PO#] is currently [status]. It was shipped via [carrier] on [ship date], with an estimated delivery of [date]."</div>
+        </div>
+        <div class="script-block">
+          <div class="script-block-label">Provide Tracking</div>
+          <div class="script-block-text">"Your tracking number with [carrier] is [tracking#]. You can track it directly at [tracking URL], and the last update we have is: [last tracking event]."</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="card-title-accent"></div>Exception / Delay Handling</div>
+        <div class="script-block">
+          <div class="script-block-label">Delay</div>
+          <div class="script-block-text">"I can see there's been a delay on this shipment — the reason noted is [delay reason]. The revised estimated delivery is [date]. I sincerely apologize for the inconvenience."</div>
+        </div>
+        <div class="script-block">
+          <div class="script-block-label">On Hold</div>
+          <div class="script-block-text">"I'm showing this order is currently on hold due to [on hold reason]. I'll need to loop in our [accounts receivable / sales] team to get this resolved. Can I arrange a callback, or would you like to hold while I transfer you?"</div>
+        </div>
+        <div class="script-block">
+          <div class="script-block-label">Partial Shipment</div>
+          <div class="script-block-text">"Your order has been partially fulfilled — [X] of [Y] items have shipped. The remaining [Z] items have an estimated ship date of [date]. I'll make sure you receive tracking when they go out."</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="card-title-accent"></div>Closing</div>
+        <div class="script-block">
+          <div class="script-block-label">Wrap-Up</div>
+          <div class="script-block-text">"Is there anything else I can help you with today regarding your order or account?"</div>
+        </div>
+        <div class="script-block">
+          <div class="script-block-label">Close</div>
+          <div class="script-block-text">"Thank you for calling Composites One. We appreciate your business, and please don't hesitate to reach out if you need anything further. Have a great day!"</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY TAB ─────────────────────────────────── -->
+    <div class="tab-pane" id="tab-history">
+      <div class="card">
+        <div class="card-title"><div class="card-title-accent"></div>Interaction History</div>
+        <div class="timeline">
+          <div class="tl-event">
+            <div class="tl-date">Mar 28, 2026</div>
+            <div class="tl-type">Inbound Call</div>
+            <div class="tl-summary">Customer called to inquire about delivery ETA. Tracking info shared. No escalation required.</div>
+          </div>
+          <div class="tl-event">
+            <div class="tl-date">Mar 24, 2026</div>
+            <div class="tl-type">Email</div>
+            <div class="tl-summary">Automated order confirmation sent for PO placed on 3/24/26.</div>
+          </div>
+          <div class="tl-event">
+            <div class="tl-date">Mar 21, 2026</div>
+            <div class="tl-type">Outbound Call</div>
+            <div class="tl-summary">Agent followed up on delayed shipment. Customer acknowledged delay, no further action needed.</div>
+          </div>
+          <div class="tl-event">
+            <div class="tl-date">Mar 15, 2026</div>
+            <div class="tl-type">Inbound Call</div>
+            <div class="tl-summary">Customer inquired about order on hold. Transferred to AR team for credit review resolution.</div>
+          </div>
+          <div class="tl-event">
+            <div class="tl-date">Mar 10, 2026</div>
+            <div class="tl-type">Email</div>
+            <div class="tl-summary">Shipping confirmation and tracking link sent automatically upon order dispatch.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+</div><!-- /main-layout -->
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════════════ */
+const CUSTOMERS = [{"key":"C1001","customer_name":"Melissa Grant","company_name":"ABC Fabrication","phone":2145550101,"phone_normalized":2145550101,"email":"melissa.grant@abcfab.com","account_number":"ACCT001"},{"key":"C1002","customer_name":"Kevin Morales","company_name":"Prime Panels","phone":7135550102,"phone_normalized":7135550102,"email":"kevin.morales@primepanels.com","account_number":"ACCT002"},{"key":"C1003","customer_name":"Alicia Turner","company_name":"West Coast Marine","phone":5625550103,"phone_normalized":5625550103,"email":"alicia.turner@wcmarine.com","account_number":"ACCT003"},{"key":"C1004","customer_name":"Daniel Brooks","company_name":"Northline Composites","phone":3125550104,"phone_normalized":3125550104,"email":"daniel.brooks@northlineco.com","account_number":"ACCT004"},{"key":"C1005","customer_name":"Tina Alvarez","company_name":"Rocky Mountain Plastics","phone":3035550105,"phone_normalized":3035550105,"email":"tina.alvarez@rmplastics.com","account_number":"ACCT005"},{"key":"C1006","customer_name":"Robert Chen","company_name":"Lone Star Industrial","phone":9725550106,"phone_normalized":9725550106,"email":"robert.chen@lonestarind.com","account_number":"ACCT006"},{"key":"C1007","customer_name":"Sarah Mitchell","company_name":"Bluewater Supply","phone":9045550107,"phone_normalized":9045550107,"email":"sarah.mitchell@bluewatersupply.com","account_number":"ACCT007"},{"key":"C1008","customer_name":"James Patel","company_name":"Frontier Tooling","phone":6025550108,"phone_normalized":6025550108,"email":"james.patel@frontiertooling.com","account_number":"ACCT008"},{"key":"C1009","customer_name":"Emily Ross","company_name":"Midwest Molding","phone":3175550109,"phone_normalized":3175550109,"email":"emily.ross@midwestmolding.com","account_number":"ACCT009"},{"key":"C1010","customer_name":"Victor Nguyen","company_name":"Precision Fibers","phone":7145550110,"phone_normalized":7145550110,"email":"victor.nguyen@precisionfibers.com","account_number":"ACCT010"},{"key":"C1011","customer_name":"Nicole Adams","company_name":"Atlantic Engineered Parts","phone":7045550111,"phone_normalized":7045550111,"email":"nicole.adams@atlanticparts.com","account_number":"ACCT011"},{"key":"C1012","customer_name":"Brandon Lee","company_name":"Evergreen Marine Tech","phone":2065550112,"phone_normalized":2065550112,"email":"brandon.lee@evergreenmarine.com","account_number":"ACCT012"},{"key":"C1013","customer_name":"Megan Foster","company_name":"Summit Build Systems","phone":8015550113,"phone_normalized":8015550113,"email":"megan.foster@summitbuild.com","account_number":"ACCT013"},{"key":"C1014","customer_name":"Chris Walker","company_name":"Gulf Coast Panels","phone":5045550114,"phone_normalized":5045550114,"email":"chris.walker@gulfcoastpanels.com","account_number":"ACCT014"},{"key":"C1015","customer_name":"Olivia Harris","company_name":"Central Composite Works","phone":8165550115,"phone_normalized":8165550115,"email":"olivia.harris@ccworks.com","account_number":"ACCT015"},{"key":"C1016","customer_name":"Tyler Scott","company_name":"Northeast Performance Materials","phone":6175550116,"phone_normalized":6175550116,"email":"tyler.scott@nepmaterials.com","account_number":"ACCT016"},{"key":"C1017","customer_name":"Hannah Rivera","company_name":"Pacific Resin Supply","phone":5035550117,"phone_normalized":5035550117,"email":"hannah.rivera@pacificresin.com","account_number":"ACCT017"},{"key":"C1018","customer_name":"Aaron Cooper","company_name":"Tri-State Panels","phone":5135550118,"phone_normalized":5135550118,"email":"aaron.cooper@tristatepanels.com","account_number":"ACCT018"},{"key":"C1019","customer_name":"Lauren Price","company_name":"Delta Industrial Plastics","phone":9015550119,"phone_normalized":9015550119,"email":"lauren.price@deltaindustrial.com","account_number":"ACCT019"},{"key":"C1020","customer_name":"Jason Reed","company_name":"Keystone Structural Supply","phone":2155550120,"phone_normalized":2155550120,"email":"jason.reed@keystonestructural.com","account_number":"ACCT020"}];
+
+const ORDERS = [{"key":"SO456781","po_number":"PO99872","customer_name":"Melissa Grant","company_name":"ABC Fabrication","email":"melissa.grant@abcfab.com","phone":"(214) 555-0101","phone_normalized":2145550101,"delivery_zip":75201,"order_date":"3/12/26","order_status":"Shipped","total_line_items":3,"shipped_line_items":3,"pending_line_items":0,"estimated_ship_date":"3/20/26","estimated_delivery_date":"3/25/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Dallas","ship_to_state":"TX"},{"key":"SO456782","po_number":"PO99873","customer_name":"Kevin Morales","company_name":"Prime Panels","email":"kevin.morales@primepanels.com","phone":"(713) 555-0102","phone_normalized":7135550102,"delivery_zip":77002,"order_date":"3/13/26","order_status":"Partially Shipped","total_line_items":4,"shipped_line_items":2,"pending_line_items":2,"estimated_ship_date":"3/19/26","estimated_delivery_date":"3/26/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Houston","ship_to_state":"TX"},{"key":"SO456783","po_number":"PO99874","customer_name":"Alicia Turner","company_name":"West Coast Marine","email":"alicia.turner@wcmarine.com","phone":"(562) 555-0103","phone_normalized":5625550103,"delivery_zip":90802,"order_date":"3/14/26","order_status":"Open","total_line_items":5,"shipped_line_items":0,"pending_line_items":5,"estimated_ship_date":"3/27/26","estimated_delivery_date":"4/2/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Long Beach","ship_to_state":"CA"},{"key":"SO456784","po_number":"PO99875","customer_name":"Daniel Brooks","company_name":"Northline Composites","email":"daniel.brooks@northlineco.com","phone":"(312) 555-0104","phone_normalized":3125550104,"delivery_zip":60601,"order_date":"3/10/26","order_status":"Delivered","total_line_items":2,"shipped_line_items":2,"pending_line_items":0,"estimated_ship_date":"3/15/26","estimated_delivery_date":"3/19/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Chicago","ship_to_state":"IL"},{"key":"SO456785","po_number":"PO99876","customer_name":"Tina Alvarez","company_name":"Rocky Mountain Plastics","email":"tina.alvarez@rmplastics.com","phone":"(303) 555-0105","phone_normalized":3035550105,"delivery_zip":80202,"order_date":"3/11/26","order_status":"Delayed","total_line_items":6,"shipped_line_items":0,"pending_line_items":6,"estimated_ship_date":"3/18/26","estimated_delivery_date":"3/29/26","on_hold_reason":null,"delay_reason":"Carrier capacity constraint","ship_to_city":"Denver","ship_to_state":"CO"},{"key":"SO456786","po_number":"PO99877","customer_name":"Robert Chen","company_name":"Lone Star Industrial","email":"robert.chen@lonestarind.com","phone":"(972) 555-0106","phone_normalized":9725550106,"delivery_zip":75001,"order_date":"3/9/26","order_status":"On Hold","total_line_items":3,"shipped_line_items":0,"pending_line_items":3,"estimated_ship_date":"3/18/26","estimated_delivery_date":"3/28/26","on_hold_reason":"Credit review pending","delay_reason":null,"ship_to_city":"Addison","ship_to_state":"TX"},{"key":"SO456787","po_number":"PO99878","customer_name":"Sarah Mitchell","company_name":"Bluewater Supply","email":"sarah.mitchell@bluewatersupply.com","phone":"(904) 555-0107","phone_normalized":9045550107,"delivery_zip":32202,"order_date":"3/8/26","order_status":"Shipped","total_line_items":2,"shipped_line_items":2,"pending_line_items":0,"estimated_ship_date":"3/16/26","estimated_delivery_date":"3/22/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Jacksonville","ship_to_state":"FL"},{"key":"SO456788","po_number":"PO99879","customer_name":"James Patel","company_name":"Frontier Tooling","email":"james.patel@frontiertooling.com","phone":"(602) 555-0108","phone_normalized":6025550108,"delivery_zip":85004,"order_date":"3/15/26","order_status":"Processing","total_line_items":3,"shipped_line_items":0,"pending_line_items":3,"estimated_ship_date":"3/24/26","estimated_delivery_date":"3/31/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Phoenix","ship_to_state":"AZ"},{"key":"SO456789","po_number":"PO99880","customer_name":"Emily Ross","company_name":"Midwest Molding","email":"emily.ross@midwestmolding.com","phone":"(317) 555-0109","phone_normalized":3175550109,"delivery_zip":46204,"order_date":"3/7/26","order_status":"Delivered","total_line_items":4,"shipped_line_items":4,"pending_line_items":0,"estimated_ship_date":"3/12/26","estimated_delivery_date":"3/17/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Indianapolis","ship_to_state":"IN"},{"key":"SO456790","po_number":"PO99881","customer_name":"Victor Nguyen","company_name":"Precision Fibers","email":"victor.nguyen@precisionfibers.com","phone":"(714) 555-0110","phone_normalized":7145550110,"delivery_zip":92805,"order_date":"3/16/26","order_status":"Partially Shipped","total_line_items":5,"shipped_line_items":3,"pending_line_items":2,"estimated_ship_date":"3/22/26","estimated_delivery_date":"3/30/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Anaheim","ship_to_state":"CA"},{"key":"SO456791","po_number":"PO99882","customer_name":"Nicole Adams","company_name":"Atlantic Engineered Parts","email":"nicole.adams@atlanticparts.com","phone":"(704) 555-0111","phone_normalized":7045550111,"delivery_zip":28202,"order_date":"3/5/26","order_status":"Delivered","total_line_items":1,"shipped_line_items":1,"pending_line_items":0,"estimated_ship_date":"3/8/26","estimated_delivery_date":"3/12/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Charlotte","ship_to_state":"NC"},{"key":"SO456792","po_number":"PO99883","customer_name":"Brandon Lee","company_name":"Evergreen Marine Tech","email":"brandon.lee@evergreenmarine.com","phone":"(206) 555-0112","phone_normalized":2065550112,"delivery_zip":98101,"order_date":"3/14/26","order_status":"Shipped","total_line_items":2,"shipped_line_items":2,"pending_line_items":0,"estimated_ship_date":"3/21/26","estimated_delivery_date":"3/27/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Seattle","ship_to_state":"WA"},{"key":"SO456793","po_number":"PO99884","customer_name":"Megan Foster","company_name":"Summit Build Systems","email":"megan.foster@summitbuild.com","phone":"(801) 555-0113","phone_normalized":8015550113,"delivery_zip":84111,"order_date":"3/13/26","order_status":"Open","total_line_items":3,"shipped_line_items":0,"pending_line_items":3,"estimated_ship_date":"3/28/26","estimated_delivery_date":"4/3/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Salt Lake City","ship_to_state":"UT"},{"key":"SO456794","po_number":"PO99885","customer_name":"Chris Walker","company_name":"Gulf Coast Panels","email":"chris.walker@gulfcoastpanels.com","phone":"(504) 555-0114","phone_normalized":5045550114,"delivery_zip":70112,"order_date":"3/6/26","order_status":"Delivered","total_line_items":2,"shipped_line_items":2,"pending_line_items":0,"estimated_ship_date":"3/10/26","estimated_delivery_date":"3/15/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"New Orleans","ship_to_state":"LA"},{"key":"SO456795","po_number":"PO99886","customer_name":"Olivia Harris","company_name":"Central Composite Works","email":"olivia.harris@ccworks.com","phone":"(816) 555-0115","phone_normalized":8165550115,"delivery_zip":64106,"order_date":"3/12/26","order_status":"Delayed","total_line_items":4,"shipped_line_items":1,"pending_line_items":3,"estimated_ship_date":"3/19/26","estimated_delivery_date":"3/28/26","on_hold_reason":null,"delay_reason":"Weather delay","ship_to_city":"Kansas City","ship_to_state":"MO"},{"key":"SO456796","po_number":"PO99887","customer_name":"Tyler Scott","company_name":"Northeast Performance Materials","email":"tyler.scott@nepmaterials.com","phone":"(617) 555-0116","phone_normalized":6175550116,"delivery_zip":2108,"order_date":"3/11/26","order_status":"Processing","total_line_items":2,"shipped_line_items":0,"pending_line_items":2,"estimated_ship_date":"3/23/26","estimated_delivery_date":"3/29/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Boston","ship_to_state":"MA"},{"key":"SO456797","po_number":"PO99888","customer_name":"Hannah Rivera","company_name":"Pacific Resin Supply","email":"hannah.rivera@pacificresin.com","phone":"(503) 555-0117","phone_normalized":5035550117,"delivery_zip":97204,"order_date":"3/10/26","order_status":"Shipped","total_line_items":3,"shipped_line_items":3,"pending_line_items":0,"estimated_ship_date":"3/17/26","estimated_delivery_date":"3/24/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Portland","ship_to_state":"OR"},{"key":"SO456798","po_number":"PO99889","customer_name":"Aaron Cooper","company_name":"Tri-State Panels","email":"aaron.cooper@tristatepanels.com","phone":"(513) 555-0118","phone_normalized":5135550118,"delivery_zip":45202,"order_date":"3/9/26","order_status":"On Hold","total_line_items":5,"shipped_line_items":0,"pending_line_items":5,"estimated_ship_date":"3/18/26","estimated_delivery_date":"3/30/26","on_hold_reason":"Pricing approval required","delay_reason":null,"ship_to_city":"Cincinnati","ship_to_state":"OH"},{"key":"SO456799","po_number":"PO99890","customer_name":"Lauren Price","company_name":"Delta Industrial Plastics","email":"lauren.price@deltaindustrial.com","phone":"(901) 555-0119","phone_normalized":9015550119,"delivery_zip":38103,"order_date":"3/15/26","order_status":"Partially Shipped","total_line_items":6,"shipped_line_items":4,"pending_line_items":2,"estimated_ship_date":"3/21/26","estimated_delivery_date":"3/29/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Memphis","ship_to_state":"TN"},{"key":"SO456800","po_number":"PO99891","customer_name":"Jason Reed","company_name":"Keystone Structural Supply","email":"jason.reed@keystonestructural.com","phone":"(215) 555-0120","phone_normalized":2155550120,"delivery_zip":19103,"order_date":"3/8/26","order_status":"Delivered","total_line_items":3,"shipped_line_items":3,"pending_line_items":0,"estimated_ship_date":"3/13/26","estimated_delivery_date":"3/18/26","on_hold_reason":null,"delay_reason":null,"ship_to_city":"Philadelphia","ship_to_state":"PA"}];
+
+const SHIPMENTS = [{"key":"SH900001","order_id":"SO456781","shipment_number":"S1","shipment_status":"In Transit","carrier":"FedEx","tracking_number":"784512340001","ship_date":"2026-03-21","estimated_delivery_date":"2026-03-25","actual_delivery_date":null,"shipped_line_items":3,"pending_line_items":0,"last_tracking_event":"Departed FedEx location Fort Worth TX","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/fedex/784512340001","delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900002","order_id":"SO456782","shipment_number":"S1","shipment_status":"In Transit","carrier":"Old Dominion","tracking_number":"ODFL99873001","ship_date":"2026-03-20","estimated_delivery_date":"2026-03-26","actual_delivery_date":null,"shipped_line_items":2,"pending_line_items":2,"last_tracking_event":"Arrived at terminal Houston TX","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/od/ODFL99873001","delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900003","order_id":"SO456783","shipment_number":"S1","shipment_status":"Pending","carrier":null,"tracking_number":null,"ship_date":"2026-03-27","estimated_delivery_date":"2026-04-02","actual_delivery_date":null,"shipped_line_items":0,"pending_line_items":5,"last_tracking_event":"Order not yet released","last_tracking_event_date":"2026-03-23","tracking_url":null,"delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900004","order_id":"SO456784","shipment_number":"S1","shipment_status":"Delivered","carrier":"UPS","tracking_number":"1Z999AA10123456784","ship_date":"2026-03-15","estimated_delivery_date":"2026-03-19","actual_delivery_date":"2026-03-19","shipped_line_items":2,"pending_line_items":0,"last_tracking_event":"Delivered at dock","last_tracking_event_date":"2026-03-19","tracking_url":"https://tracking.demo/ups/1Z999AA10123456784","delivery_exception":null,"proof_of_delivery_name":"J Carter"},{"key":"SH900005","order_id":"SO456785","shipment_number":"S1","shipment_status":"Delayed","carrier":"XPO","tracking_number":"XPO99876001","ship_date":"2026-03-18","estimated_delivery_date":"2026-03-29","actual_delivery_date":null,"shipped_line_items":0,"pending_line_items":6,"last_tracking_event":"Pickup delayed carrier capacity","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/xpo/XPO99876001","delivery_exception":"Carrier capacity constraint","proof_of_delivery_name":null},{"key":"SH900006","order_id":"SO456786","shipment_number":"S1","shipment_status":"On Hold","carrier":null,"tracking_number":null,"ship_date":"2026-03-18","estimated_delivery_date":"2026-03-28","actual_delivery_date":null,"shipped_line_items":0,"pending_line_items":3,"last_tracking_event":"Shipment blocked order on hold","last_tracking_event_date":"2026-03-23","tracking_url":null,"delivery_exception":"Credit review pending","proof_of_delivery_name":null},{"key":"SH900007","order_id":"SO456787","shipment_number":"S1","shipment_status":"In Transit","carrier":"FedEx","tracking_number":"784512340007","ship_date":"2026-03-16","estimated_delivery_date":"2026-03-22","actual_delivery_date":null,"shipped_line_items":2,"pending_line_items":0,"last_tracking_event":"In transit linehaul","last_tracking_event_date":"2026-03-21","tracking_url":"https://tracking.demo/fedex/784512340007","delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900008","order_id":"SO456788","shipment_number":"S1","shipment_status":"Preparing","carrier":null,"tracking_number":null,"ship_date":"2026-03-24","estimated_delivery_date":"2026-03-31","actual_delivery_date":null,"shipped_line_items":0,"pending_line_items":3,"last_tracking_event":"Warehouse picking","last_tracking_event_date":"2026-03-23","tracking_url":null,"delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900009","order_id":"SO456789","shipment_number":"S1","shipment_status":"Delivered","carrier":"SAIA","tracking_number":"SAIA99880001","ship_date":"2026-03-12","estimated_delivery_date":"2026-03-17","actual_delivery_date":"2026-03-17","shipped_line_items":4,"pending_line_items":0,"last_tracking_event":"Delivered signed","last_tracking_event_date":"2026-03-17","tracking_url":"https://tracking.demo/saia/SAIA99880001","delivery_exception":null,"proof_of_delivery_name":"M Johnson"},{"key":"SH900010","order_id":"SO456790","shipment_number":"S1","shipment_status":"In Transit","carrier":"UPS","tracking_number":"1Z999AA10123456790","ship_date":"2026-03-22","estimated_delivery_date":"2026-03-30","actual_delivery_date":null,"shipped_line_items":3,"pending_line_items":2,"last_tracking_event":"Label created accepted","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/ups/1Z999AA10123456790","delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900011","order_id":"SO456791","shipment_number":"S1","shipment_status":"Delivered","carrier":"FedEx","tracking_number":"784512340011","ship_date":"2026-03-08","estimated_delivery_date":"2026-03-12","actual_delivery_date":"2026-03-12","shipped_line_items":1,"pending_line_items":0,"last_tracking_event":"Delivered front office","last_tracking_event_date":"2026-03-12","tracking_url":"https://tracking.demo/fedex/784512340011","delivery_exception":null,"proof_of_delivery_name":"C Evans"},{"key":"SH900012","order_id":"SO456792","shipment_number":"S1","shipment_status":"In Transit","carrier":"Old Dominion","tracking_number":"ODFL99883001","ship_date":"2026-03-21","estimated_delivery_date":"2026-03-27","actual_delivery_date":null,"shipped_line_items":2,"pending_line_items":0,"last_tracking_event":"Departed terminal","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/od/ODFL99883001","delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900013","order_id":"SO456793","shipment_number":"S1","shipment_status":"Pending","carrier":null,"tracking_number":null,"ship_date":"2026-03-28","estimated_delivery_date":"2026-04-03","actual_delivery_date":null,"shipped_line_items":0,"pending_line_items":3,"last_tracking_event":"Awaiting inventory","last_tracking_event_date":"2026-03-23","tracking_url":null,"delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900014","order_id":"SO456794","shipment_number":"S1","shipment_status":"Delivered","carrier":"UPS","tracking_number":"1Z999AA10123456794","ship_date":"2026-03-10","estimated_delivery_date":"2026-03-15","actual_delivery_date":"2026-03-15","shipped_line_items":2,"pending_line_items":0,"last_tracking_event":"Delivered receiving","last_tracking_event_date":"2026-03-15","tracking_url":"https://tracking.demo/ups/1Z999AA10123456794","delivery_exception":null,"proof_of_delivery_name":"T Lewis"},{"key":"SH900015","order_id":"SO456795","shipment_number":"S1","shipment_status":"Delayed","carrier":"FedEx Freight","tracking_number":"FXF99886001","ship_date":"2026-03-19","estimated_delivery_date":"2026-03-28","actual_delivery_date":null,"shipped_line_items":1,"pending_line_items":3,"last_tracking_event":"Weather delay corridor","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/fxf/FXF99886001","delivery_exception":"Weather delay","proof_of_delivery_name":null},{"key":"SH900016","order_id":"SO456796","shipment_number":"S1","shipment_status":"Preparing","carrier":null,"tracking_number":null,"ship_date":"2026-03-23","estimated_delivery_date":"2026-03-29","actual_delivery_date":null,"shipped_line_items":0,"pending_line_items":2,"last_tracking_event":"Staged for shipment","last_tracking_event_date":"2026-03-23","tracking_url":null,"delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900017","order_id":"SO456797","shipment_number":"S1","shipment_status":"In Transit","carrier":"SAIA","tracking_number":"SAIA99888001","ship_date":"2026-03-17","estimated_delivery_date":"2026-03-24","actual_delivery_date":null,"shipped_line_items":3,"pending_line_items":0,"last_tracking_event":"In transit to terminal","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/saia/SAIA99888001","delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900018","order_id":"SO456798","shipment_number":"S1","shipment_status":"On Hold","carrier":null,"tracking_number":null,"ship_date":"2026-03-18","estimated_delivery_date":"2026-03-30","actual_delivery_date":null,"shipped_line_items":0,"pending_line_items":5,"last_tracking_event":"Shipment blocked pricing approval","last_tracking_event_date":"2026-03-23","tracking_url":null,"delivery_exception":"Pricing approval required","proof_of_delivery_name":null},{"key":"SH900019","order_id":"SO456799","shipment_number":"S1","shipment_status":"In Transit","carrier":"XPO","tracking_number":"XPO99890001","ship_date":"2026-03-21","estimated_delivery_date":"2026-03-29","actual_delivery_date":null,"shipped_line_items":4,"pending_line_items":2,"last_tracking_event":"Departed service center","last_tracking_event_date":"2026-03-22","tracking_url":"https://tracking.demo/xpo/XPO99890001","delivery_exception":null,"proof_of_delivery_name":null},{"key":"SH900020","order_id":"SO456800","shipment_number":"S1","shipment_status":"Delivered","carrier":"Old Dominion","tracking_number":"ODFL99891001","ship_date":"2026-03-13","estimated_delivery_date":"2026-03-18","actual_delivery_date":"2026-03-18","shipped_line_items":3,"pending_line_items":0,"last_tracking_event":"Delivered signed","last_tracking_event_date":"2026-03-18","tracking_url":"https://tracking.demo/od/ODFL99891001","delivery_exception":null,"proof_of_delivery_name":"R Miller"}];
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+let selectedCustomer = null;
+
+/* ═══════════════════════════════════════════════════════════
+   SEARCH
+═══════════════════════════════════════════════════════════ */
+const searchInput  = document.getElementById('searchInput');
+const searchDropdown = document.getElementById('searchDropdown');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) { searchDropdown.classList.remove('open'); return; }
+
+  const hits = CUSTOMERS.filter(c =>
+    c.customer_name.toLowerCase().includes(q) ||
+    c.company_name.toLowerCase().includes(q) ||
+    c.account_number.toLowerCase().includes(q) ||
+    String(c.phone_normalized).includes(q)
+  ).slice(0, 8);
+
+  if (!hits.length) {
+    searchDropdown.innerHTML = '<div class="search-no-results">No customers found</div>';
+  } else {
+    searchDropdown.innerHTML = hits.map(c => `
+      <div class="search-result-item" onclick="selectCustomer('${c.key}')">
+        <div>
+          <div class="sri-company">${c.company_name}</div>
+          <div class="sri-detail">${c.customer_name} · ${formatPhone(c.phone_normalized)}</div>
+        </div>
+        <div class="sri-badge">${c.account_number}</div>
+      </div>`).join('');
+  }
+  searchDropdown.classList.add('open');
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-box-wrap')) searchDropdown.classList.remove('open');
+});
+
+/* ═══════════════════════════════════════════════════════════
+   SELECT CUSTOMER
+═══════════════════════════════════════════════════════════ */
+function selectCustomer(key) {
+  selectedCustomer = CUSTOMERS.find(c => c.key === key);
+  searchDropdown.classList.remove('open');
+  searchInput.value = selectedCustomer.company_name + ' — ' + selectedCustomer.customer_name;
+  document.getElementById('clearBtn').style.display = '';
+
+  renderLeftPanel();
+  renderOrders();
+  renderShipments();
+  toast(`Loaded: ${selectedCustomer.company_name}`);
+}
+
+function clearSelection() {
+  selectedCustomer = null;
+  searchInput.value = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('leftEmpty').style.display = '';
+  document.getElementById('leftContent').style.display = 'none';
+  document.getElementById('orders-empty').style.display = '';
+  document.getElementById('orders-content').style.display = 'none';
+  document.getElementById('shipments-empty').style.display = '';
+  document.getElementById('shipments-content').style.display = 'none';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEFT PANEL
+═══════════════════════════════════════════════════════════ */
+function renderLeftPanel() {
+  const c = selectedCustomer;
+  const orders = ORDERS.filter(o => o.phone_normalized === c.phone_normalized);
+
+  document.getElementById('leftEmpty').style.display = 'none';
+  document.getElementById('leftContent').style.display = '';
+
+  document.getElementById('lp-name').textContent    = c.customer_name;
+  document.getElementById('lp-company').textContent = c.company_name;
+  document.getElementById('lp-acct').textContent    = c.account_number;
+  document.getElementById('lp-phone').textContent   = formatPhone(c.phone_normalized);
+  document.getElementById('lp-email').textContent   = c.email;
+
+  const list = document.getElementById('lp-orders-list');
+  if (!orders.length) {
+    list.innerHTML = '<div style="font-size:0.8rem;color:var(--gray-500);">No orders found</div>';
+  } else {
+    list.innerHTML = orders.map(o => `
+      <div style="margin-bottom:8px;padding:8px 10px;background:var(--gray-100);border-radius:8px;cursor:pointer;"
+           onclick="switchTab('orders')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:600;font-size:0.85rem;color:var(--navy);">${o.po_number}</div>
+          ${statusBadge(o.order_status)}
+        </div>
+        <div style="font-size:0.75rem;color:var(--gray-500);margin-top:2px;">${o.ship_to_city}, ${o.ship_to_state} · ETA ${o.estimated_delivery_date}</div>
+      </div>`).join('');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ORDERS TAB
+═══════════════════════════════════════════════════════════ */
+function renderOrders() {
+  const c = selectedCustomer;
+  const orders = ORDERS.filter(o => o.phone_normalized === c.phone_normalized);
+
+  document.getElementById('orders-empty').style.display = 'none';
+  const container = document.getElementById('orders-content');
+  container.style.display = '';
+
+  if (!orders.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-title">No orders found</div></div>';
+    return;
+  }
+
+  container.innerHTML = orders.map(o => {
+    const pct = o.total_line_items > 0 ? Math.round((o.shipped_line_items / o.total_line_items) * 100) : 0;
+    const exception = (o.on_hold_reason || o.delay_reason)
+      ? `<div class="exception-banner">⚠ ${o.on_hold_reason || o.delay_reason}</div>` : '';
+
+    return `
+    <div class="card">
+      ${exception}
+      <div class="card-title">
+        <div class="card-title-accent"></div>
+        ${o.po_number}
+        <span style="margin-left:auto;">${statusBadge(o.order_status)}</span>
+      </div>
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div class="field-group"><div class="field-label">Order #</div><div class="field-value">${o.key}</div></div>
+        <div class="field-group"><div class="field-label">Order Date</div><div class="field-value">${o.order_date}</div></div>
+        <div class="field-group"><div class="field-label">Status</div><div class="field-value">${o.order_status}</div></div>
+        <div class="field-group"><div class="field-label">Ship To</div><div class="field-value">${o.ship_to_city}, ${o.ship_to_state} ${o.delivery_zip}</div></div>
+        <div class="field-group"><div class="field-label">Est. Ship Date</div><div class="field-value">${o.estimated_ship_date}</div></div>
+        <div class="field-group"><div class="field-label">Est. Delivery</div><div class="field-value">${o.estimated_delivery_date}</div></div>
+      </div>
+      <div style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">
+        <div class="field-label">Fulfillment Progress</div>
+        <div style="font-size:0.78rem;color:var(--gray-500);">${o.shipped_line_items} of ${o.total_line_items} items shipped</div>
+      </div>
+      <div class="prog-bar-wrap"><div class="prog-bar" style="width:${pct}%"></div></div>
+      ${o.on_hold_reason ? `<div style="margin-top:10px;font-size:0.82rem;"><span class="field-label">On Hold Reason: </span><span style="color:var(--red);font-weight:600;">${o.on_hold_reason}</span></div>` : ''}
+      ${o.delay_reason ? `<div style="margin-top:6px;font-size:0.82rem;"><span class="field-label">Delay Reason: </span><span style="color:var(--amber);font-weight:600;">${o.delay_reason}</span></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHIPMENTS TAB
+═══════════════════════════════════════════════════════════ */
+function renderShipments() {
+  const c = selectedCustomer;
+  const orders = ORDERS.filter(o => o.phone_normalized === c.phone_normalized);
+  const orderIds = orders.map(o => o.key);
+  const shipments = SHIPMENTS.filter(s => orderIds.includes(s.order_id));
+
+  document.getElementById('shipments-empty').style.display = 'none';
+  const container = document.getElementById('shipments-content');
+  container.style.display = '';
+
+  if (!shipments.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🚚</div><div class="empty-title">No shipments found</div></div>';
+    return;
+  }
+
+  container.innerHTML = shipments.map(s => {
+    const order = ORDERS.find(o => o.key === s.order_id) || {};
+    const exBanner = s.delivery_exception
+      ? `<div class="exception-banner">⚠ Delivery Exception: ${s.delivery_exception}</div>` : '';
+
+    return `
+    <div class="card">
+      ${exBanner}
+      <div class="card-title">
+        <div class="card-title-accent"></div>
+        ${order.po_number || s.order_id} — Shipment ${s.shipment_number}
+        <span style="margin-left:auto;">${shipmentBadge(s.shipment_status)}</span>
+      </div>
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div class="field-group"><div class="field-label">Carrier</div><div class="field-value">${s.carrier || '—'}</div></div>
+        <div class="field-group"><div class="field-label">Tracking #</div><div class="field-value">${s.tracking_number
+          ? (s.tracking_url ? `<a href="${s.tracking_url}" target="_blank">${s.tracking_number}</a>` : s.tracking_number)
+          : '—'}</div></div>
+        <div class="field-group"><div class="field-label">Ship Date</div><div class="field-value">${s.ship_date}</div></div>
+        <div class="field-group"><div class="field-label">Est. Delivery</div><div class="field-value">${s.estimated_delivery_date}</div></div>
+        <div class="field-group"><div class="field-label">Actual Delivery</div><div class="field-value">${s.actual_delivery_date || '—'}</div></div>
+        <div class="field-group"><div class="field-label">POD Signed By</div><div class="field-value">${s.proof_of_delivery_name || '—'}</div></div>
+      </div>
+      <div class="field-group" style="margin-bottom:10px;">
+        <div class="field-label">Last Tracking Event (${s.last_tracking_event_date})</div>
+        <div class="field-value">${s.last_tracking_event}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--gray-500);">
+        <span>${s.shipped_line_items} item(s) shipped · ${s.pending_line_items} pending</span>
+        ${s.tracking_url ? `<a href="${s.tracking_url}" target="_blank" style="color:var(--blue);font-weight:600;">Track Online ↗</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════════ */
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHECKLIST
+═══════════════════════════════════════════════════════════ */
+function toggleCheck(el) {
+  const cb = el.querySelector('input');
+  cb.checked = !cb.checked;
+  el.classList.toggle('checked', cb.checked);
+}
+function resetChecklist() {
+  document.querySelectorAll('#workflowChecklist .check-item').forEach(el => {
+    el.querySelector('input').checked = false;
+    el.classList.remove('checked');
+  });
+  toast('Checklist reset');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ESCALATION
+═══════════════════════════════════════════════════════════ */
+function escalate() {
+  switchTab('workflow');
+  const panel = document.getElementById('escalationPanel');
+  panel.classList.toggle('open');
+}
+function selectEscalation(el) {
+  document.getElementById('escalationPanel').classList.remove('open');
+  toast('Escalation logged: ' + el.textContent.trim());
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════ */
+function formatPhone(n) {
+  const s = String(n).replace(/\D/g, '');
+  if (s.length === 10) return `(${s.slice(0,3)}) ${s.slice(3,6)}-${s.slice(6)}`;
+  return s;
+}
+
+function statusBadge(status) {
+  const map = {
+    'Shipped':          'badge-shipped',
+    'Partially Shipped':'badge-partial',
+    'Open':             'badge-open',
+    'Delivered':        'badge-delivered',
+    'Delayed':          'badge-delayed',
+    'On Hold':          'badge-hold',
+    'Processing':       'badge-processing',
+  };
+  const cls = map[status] || 'badge-open';
+  return `<span class="status-badge ${cls}"><span class="badge-dot"></span>${status}</span>`;
+}
+
+function shipmentBadge(status) {
+  const map = {
+    'In Transit':'badge-transit',
+    'Delivered': 'badge-delivered',
+    'Delayed':   'badge-delayed',
+    'On Hold':   'badge-hold',
+    'Pending':   'badge-pending',
+    'Preparing': 'badge-preparing',
+  };
+  const cls = map[status] || 'badge-pending';
+  return `<span class="status-badge ${cls}"><span class="badge-dot"></span>${status}</span>`;
+}
+
+function toast(msg) {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg + ' ✓';
+  wrap.appendChild(el);
+  requestAnimationFrame(() => { requestAnimationFrame(() => el.classList.add('show')); });
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+  }, 2800);
+}
+
+/* ─── Auto-load from URL params (Genesys Architect screen pop) ─── */
+const qp = new URLSearchParams(window.location.search);
+const autoPhone = qp.get('ANI') || qp.get('phone') || qp.get('DNIS');
+if (autoPhone) {
+  const normalized = autoPhone.replace(/\D/g, '');
+  const match = CUSTOMERS.find(c => String(c.phone_normalized) === normalized);
+  if (match) { selectCustomer(match.key); toast('Screen pop: ' + match.company_name); }
+}
+</script>
+<!-- ─── SETUP WIZARD ──────────────────────────────────────── -->
+<div id="setupOverlay" class="setup-overlay" style="display:none;">
+  <div class="setup-box">
+
+    <div class="setup-header">
+      <div class="setup-logo">COMPOSITES <span>ONE</span></div>
+      <div class="setup-title">Genesys Cloud Setup</div>
+      <div class="setup-subtitle">Enter your org's configuration to enable live transfer, screen pop, and authentication.</div>
+    </div>
+
+    <div class="setup-body">
+
+      <!-- Step 1: OAuth Client ID -->
+      <div class="setup-step">
+        <div class="setup-step-header">
+          <div class="setup-step-num">1</div>
+          <div class="setup-step-label">OAuth Client ID</div>
+        </div>
+        <div class="setup-step-hint">
+          In Genesys Cloud: <strong>Admin → OAuth → Add Client</strong><br>
+          Grant Type: <strong>Token Implicit Grant (Browser)</strong><br>
+          Add the URL below to the <strong>Authorized redirect URIs</strong> whitelist.
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;padding:8px 12px;background:var(--gray-100);border:1px solid var(--gray-200);border-radius:7px;font-family:monospace;font-size:0.78rem;color:var(--navy);word-break:break-all;line-height:1.4;" id="redirectUriDisplay"></div>
+          <button onclick="copyRedirectUri()" id="copyUriBtn"
+                  style="flex-shrink:0;padding:8px 12px;background:var(--navy);color:var(--white);border:none;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;white-space:nowrap;transition:background 0.15s;"
+                  onmouseover="this.style.background='var(--orange)'" onmouseout="this.style.background='var(--navy)'">
+            Copy
+          </button>
+        </div>
+        <div class="setup-step-hint" style="margin-bottom:0;">
+          <a href="https://help.mypurecloud.com/articles/create-an-oauth-client/" target="_blank">→ How to create an OAuth client</a>
+        </div>
+        <input class="setup-input" id="setupClientId" type="text"
+               placeholder="e.g. a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+               oninput="validateSetup()" autocomplete="off" spellcheck="false" />
+        <div class="setup-input-note" id="setupClientIdNote"></div>
+      </div>
+
+      <div class="setup-divider"></div>
+
+      <!-- Step 2: Region -->
+      <div class="setup-step" style="margin-bottom:0;">
+        <div class="setup-step-header">
+          <div class="setup-step-num">2</div>
+          <div class="setup-step-label">Genesys Cloud Region</div>
+        </div>
+        <div class="setup-step-hint">
+          Select the region your Genesys Cloud org is hosted in.<br>
+          When deployed as an Interaction Widget, Architect overrides this automatically via <code>?pcEnvironment=</code>.
+        </div>
+        <select class="setup-select" id="setupEnvironment" onchange="validateSetup()">
+          <option value="mypurecloud.com">🇺🇸 US East — Virginia (mypurecloud.com)</option>
+          <option value="usw2.pure.cloud">🇺🇸 US West — Oregon (usw2.pure.cloud)</option>
+          <option value="cac1.pure.cloud">🇨🇦 Canada (cac1.pure.cloud)</option>
+          <option value="mypurecloud.ie">🇮🇪 EU West — Ireland (mypurecloud.ie)</option>
+          <option value="mypurecloud.de">🇩🇪 EU Central — Frankfurt (mypurecloud.de)</option>
+          <option value="aps1.pure.cloud">🇰🇷 Asia Pacific — Seoul (aps1.pure.cloud)</option>
+          <option value="apne2.pure.cloud">🇦🇺 Asia Pacific — Sydney (apne2.pure.cloud)</option>
+          <option value="apne3.pure.cloud">🇯🇵 Asia Pacific — Tokyo (apne3.pure.cloud)</option>
+          <option value="mec1.pure.cloud">🇦🇪 Middle East — UAE (mec1.pure.cloud)</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="setup-actions">
+      <button class="setup-save-btn" id="setupSaveBtn" disabled onclick="saveSetupAndInit()">
+        ✓ Save &amp; Connect
+      </button>
+      <button class="setup-reset-btn" id="setupCancelBtn" onclick="cancelSetup()" style="display:none;">
+        Cancel
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Gear button — re-open setup at any time -->
+<button class="setup-gear-btn" id="setupGearBtn" onclick="openSetup(true)" title="Genesys Cloud Settings">⚙</button>
+
+<!-- ─── BLIND TRANSFER MODAL ────────────────────────────── -->
+<div class="modal-overlay" id="transferModal" onclick="handleModalOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-title"><span>↔</span> Blind Transfer</div>
+      <button class="modal-close" onclick="closeTransferModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" id="tabBtnPhone" onclick="setTransferMode('phone')">Phone / Ext</button>
+        <button class="modal-tab"        id="tabBtnQueue" onclick="setTransferMode('queue')">Queue</button>
+        <button class="modal-tab"        id="tabBtnUser"  onclick="setTransferMode('user')">Agent</button>
+      </div>
+
+      <!-- Phone mode -->
+      <div id="transferPhoneMode">
+        <div class="modal-label">Transfer Destination</div>
+        <input class="modal-input" id="transferPhoneInput" type="tel"
+               placeholder="+1 (800) 555-0100 or ext. 4200"
+               oninput="validateTransferInput()" />
+        <div class="modal-hint">Enter a full E.164 number (+1XXXXXXXXXX), SIP address, or internal extension.</div>
+      </div>
+
+      <!-- Queue mode -->
+      <div id="transferQueueMode" style="display:none;">
+        <div class="modal-label">Select Queue</div>
+        <div class="modal-queue-list" id="queueList"></div>
+      </div>
+
+      <!-- User mode -->
+      <div id="transferUserMode" style="display:none;">
+        <div class="modal-label">Search Agent</div>
+        <input class="modal-input" id="transferUserInput" type="text"
+               placeholder="Agent name or email…"
+               oninput="filterAgents()" />
+        <div class="modal-queue-list" id="agentList"></div>
+      </div>
+
+      <button class="transfer-confirm-btn" id="transferConfirmBtn" disabled onclick="executeBlindTransfer()">
+        ↔ Transfer Now
+      </button>
+
+      <div class="transfer-status" id="transferStatus">
+        <div class="spinner"></div>
+        <span id="transferStatusText">Connecting…</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   SETUP WIZARD
+═══════════════════════════════════════════════════════════ */
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function openSetup(isEdit) {
+  const overlay = document.getElementById('setupOverlay');
+  const cancelBtn = document.getElementById('setupCancelBtn');
+
+  // Pre-fill with saved values
+  const cfg = loadConfig();
+  document.getElementById('setupClientId').value    = cfg.clientId || '';
+  document.getElementById('setupEnvironment').value = cfg.environment || 'mypurecloud.com';
+
+  // Show the redirect URI — strip hash and query string, just the bare page URL
+  const redirectUri = window.location.href.split('?')[0].split('#')[0];
+  document.getElementById('redirectUriDisplay').textContent = redirectUri;
+
+  // Show cancel button only if editing (already configured)
+  cancelBtn.style.display = isEdit ? '' : 'none';
+
+  overlay.style.display = 'flex';
+  validateSetup();
+  setTimeout(() => document.getElementById('setupClientId').focus(), 80);
+}
+
+function copyRedirectUri() {
+  const uri = document.getElementById('redirectUriDisplay').textContent;
+  const btn = document.getElementById('copyUriBtn');
+  navigator.clipboard.writeText(uri).then(() => {
+    btn.textContent = 'Copied ✓';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.style.background = 'var(--navy)';
+    }, 2000);
+  }).catch(() => {
+    // Fallback for non-HTTPS / older browsers
+    const el = document.createElement('textarea');
+    el.value = uri;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    btn.textContent = 'Copied ✓';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = 'var(--navy)'; }, 2000);
+  });
+}
+
+function cancelSetup() {
+  document.getElementById('setupOverlay').style.display = 'none';
+}
+
+function validateSetup() {
+  const idVal  = document.getElementById('setupClientId').value.trim();
+  const note   = document.getElementById('setupClientIdNote');
+  const saveBtn = document.getElementById('setupSaveBtn');
+  const inp    = document.getElementById('setupClientId');
+
+  if (!idVal) {
+    note.textContent = '';
+    note.className   = 'setup-input-note';
+    inp.className    = 'setup-input';
+    saveBtn.disabled = true;
+    return;
+  }
+
+  if (UUID_RE.test(idVal)) {
+    note.textContent = '✓ Looks like a valid OAuth Client ID';
+    note.className   = 'setup-input-note ok';
+    inp.className    = 'setup-input valid';
+    saveBtn.disabled = false;
+  } else {
+    note.textContent = '⚠ OAuth Client IDs are usually a UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)';
+    note.className   = 'setup-input-note err';
+    inp.className    = 'setup-input error';
+    saveBtn.disabled = true;
+  }
+}
+
+function saveSetupAndInit() {
+  const clientId   = document.getElementById('setupClientId').value.trim();
+  const environment = document.getElementById('setupEnvironment').value;
+
+  GC_CONFIG.clientId    = clientId;
+  GC_CONFIG.environment = environment;
+  saveConfig(GC_CONFIG);
+
+  document.getElementById('setupOverlay').style.display = 'none';
+  setStatus('authenticating');
+  initSDK();
+}
+
+// ── Check on load — show wizard if no config saved ────────
+(function checkSetupOnLoad() {
+  const cfg = loadConfig();
+  if (!cfg.clientId || !UUID_RE.test(cfg.clientId)) {
+    // No valid config yet — show wizard immediately
+    document.addEventListener('DOMContentLoaded', () => openSetup(false));
+  }
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   GENESYS CLOUD SDK INTEGRATION
+   ─────────────────────────────────────────────────────────
+   Uses:
+     • purecloud-client-app-sdk  — lifecycle, environment, token
+     • purecloud-platform-client-v2 — REST API calls
+═══════════════════════════════════════════════════════════ */
+
+// ── SDK references ────────────────────────────────────────
+const ClientApp      = window.purecloud.apps.ClientApp;
+const platformClient = window.require('platformClient');
+const apiClient      = platformClient.ApiClient.instance;
+
+// ── API instances (created after auth) ───────────────────
+let conversationsApi = null;
+let routingApi       = null;
+let usersApi         = null;
+
+// ── Runtime state ─────────────────────────────────────────
+let gcAccessToken    = null;
+let gcConversationId = null;
+let gcParticipantId  = null;
+let gcEnvironment    = null;
+let gcLiveQueues     = [];
+let gcLiveAgents     = [];
+let clientApp;
+
+// ── URL params injected by Genesys Architect ──────────────
+const urlParams     = new URLSearchParams(window.location.search);
+gcConversationId    = urlParams.get('conversationId') || null;
+
+/* ─────────────────────────────────────────────────────────
+   initSDK() — called after wizard saves config, or on load
+   if config already exists in localStorage.
+───────────────────────────────────────────────────────── */
+function initSDK() {
+  // Architect ?pcEnvironment= always wins over saved config
+  const pcEnvironment = urlParams.get('pcEnvironment') || GC_CONFIG.environment;
+  gcEnvironment = pcEnvironment;
+
+  try {
+    clientApp = new ClientApp({ pcEnvironment });
+  } catch (e) {
+    console.warn('ClientApp SDK init warning:', e);
+  }
+
+  apiClient.setEnvironment(gcEnvironment);
+
+  apiClient.loginImplicitGrant(
+    GC_CONFIG.clientId,
+    window.location.href.split('?')[0],
+    { state: window.location.search }
+  )
+  .then(data => {
+    gcAccessToken = data.accessToken;
+
+    if (data.state) {
+      const restored = new URLSearchParams(data.state);
+      gcConversationId = gcConversationId || restored.get('conversationId');
+      const ani = restored.get('ANI') || restored.get('phone') || restored.get('DNIS');
+      if (ani && !selectedCustomer) attemptScreenPop(ani);
+    }
+
+    conversationsApi = new platformClient.ConversationsApi();
+    routingApi       = new platformClient.RoutingApi();
+    usersApi         = new platformClient.UsersApi();
+
+    setStatus('connected', data);
+    return Promise.all([
+      fetchActiveParticipant(),
+      fetchLiveQueues(),
+      fetchLiveAgents()
+    ]);
+  })
+  .catch(err => {
+    console.error('GC auth error:', err);
+    setStatus('error');
+  });
+}
+
+// Auto-init only if config is already saved and valid
+document.addEventListener('DOMContentLoaded', () => {
+  if (GC_CONFIG.clientId && UUID_RE.test(GC_CONFIG.clientId)) {
+    setStatus('authenticating');
+    initSDK();
+  }
+  // else: wizard will open (handled by checkSetupOnLoad above) and call initSDK() after save
+});
+
+/* ─────────────────────────────────────────────────────────
+   STEP 3: GET AGENT'S PARTICIPANT ID
+   We need this to call the /replace endpoint for transfer.
+───────────────────────────────────────────────────────── */
+async function fetchActiveParticipant() {
+  if (!gcConversationId) return;
+  try {
+    const conv = await conversationsApi.getConversation(gcConversationId);
+    const agentParticipant = (conv.participants || []).find(p => p.purpose === 'agent');
+    if (agentParticipant) {
+      gcParticipantId = agentParticipant.id;
+      console.log('GC participantId resolved:', gcParticipantId);
+    }
+  } catch (e) {
+    console.warn('Could not fetch participant ID:', e);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   STEP 4: FETCH LIVE QUEUES
+   GET /api/v2/routing/queues — pulls real queues from org
+───────────────────────────────────────────────────────── */
+async function fetchLiveQueues() {
+  try {
+    let all = [];
+    let pageNum = 1;
+    let totalPages = 1;
+    do {
+      const resp = await routingApi.getRoutingQueues({ pageSize: 100, pageNumber: pageNum });
+      all = all.concat(resp.entities || []);
+      totalPages = resp.pageCount || 1;
+      pageNum++;
+    } while (pageNum <= totalPages && pageNum <= 5); // cap at 500 queues
+
+    gcLiveQueues = all.map(q => ({
+      id:   q.id,
+      name: q.name,
+      memberCount: q.memberCount || 0
+    })).sort((a, b) => a.name.localeCompare(b.name));
+
+    console.log(`GC: loaded ${gcLiveQueues.length} queues`);
+  } catch (e) {
+    console.warn('Could not fetch queues, using demo data:', e);
+    gcLiveQueues = DEMO_QUEUES;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   STEP 5: FETCH LIVE AGENTS (on-queue / available)
+   GET /api/v2/users?state=active — then filter by presence
+───────────────────────────────────────────────────────── */
+async function fetchLiveAgents() {
+  try {
+    const resp = await usersApi.getUsers({
+      pageSize: 100,
+      state: 'active',
+      expand: ['presence']
+    });
+    gcLiveAgents = (resp.entities || []).map(u => ({
+      id:     u.id,
+      name:   u.name,
+      email:  u.email || '',
+      status: mapPresence(u.presence)
+    })).sort((a, b) => a.name.localeCompare(b.name));
+    console.log(`GC: loaded ${gcLiveAgents.length} agents`);
+  } catch (e) {
+    console.warn('Could not fetch agents, using demo data:', e);
+    gcLiveAgents = DEMO_AGENTS;
+  }
+}
+
+function mapPresence(presence) {
+  if (!presence || !presence.presenceDefinition) return 'Unknown';
+  const sys = presence.presenceDefinition.systemPresence;
+  if (sys === 'Available') return 'Available';
+  if (sys === 'Busy' || sys === 'On Queue') return sys;
+  if (sys === 'Away' || sys === 'Break') return 'Away';
+  return sys || 'Unknown';
+}
+
+/* ─────────────────────────────────────────────────────────
+   STATUS INDICATOR
+───────────────────────────────────────────────────────── */
+function setStatus(state, data) {
+  const dot   = document.getElementById('statusDot');
+  const label = document.getElementById('statusLabel');
+  if (!dot || !label) return;
+  const map = {
+    authenticating: { color: '#f39c12', shadow: 'rgba(243,156,18,0.6)',  text: 'Authenticating…' },
+    connected:      { color: '#2ecc71', shadow: 'rgba(46,204,113,0.7)',  text: 'Agent Connected' },
+    error:          { color: '#e74c3c', shadow: 'rgba(231,76,60,0.6)',   text: 'Auth Error — check Client ID' },
+  };
+  const s = map[state] || map.authenticating;
+  dot.style.background  = s.color;
+  dot.style.boxShadow   = `0 0 6px ${s.shadow}`;
+  label.textContent     = state === 'connected' && data
+    ? `Connected · ${gcConversationId ? 'Call Active' : 'No Active Call'}`
+    : s.text;
+}
+
+/* ─────────────────────────────────────────────────────────
+   SCREEN POP (post-auth restore)
+───────────────────────────────────────────────────────── */
+function attemptScreenPop(raw) {
+  const normalized = String(raw).replace(/\D/g, '');
+  const match = CUSTOMERS.find(c => String(c.phone_normalized) === normalized);
+  if (match) { selectCustomer(match.key); toast('Screen pop: ' + match.company_name); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BLIND TRANSFER MODAL
+═══════════════════════════════════════════════════════════ */
+
+// Fallback demo data (used only if API calls fail)
+const DEMO_QUEUES = [
+  { id: 'q-001', name: 'Order Management',     memberCount: 4 },
+  { id: 'q-002', name: 'Logistics & Shipping', memberCount: 6 },
+  { id: 'q-003', name: 'Accounts Receivable',  memberCount: 3 },
+  { id: 'q-004', name: 'Sales Support',        memberCount: 5 },
+  { id: 'q-005', name: 'Technical Support',    memberCount: 2 },
+];
+const DEMO_AGENTS = [
+  { id: 'u-101', name: 'Marcus Webb',   email: 'marcus.webb@compositesone.com',   status: 'On Queue' },
+  { id: 'u-102', name: 'Diana Flores',  email: 'diana.flores@compositesone.com',  status: 'Available' },
+  { id: 'u-103', name: 'Kevin Park',    email: 'kevin.park@compositesone.com',    status: 'Available' },
+  { id: 'u-104', name: 'Rachel Torres', email: 'rachel.torres@compositesone.com', status: 'Busy' },
+];
+
+let transferMode    = 'phone';
+let selectedQueueId = null;
+let selectedAgentId = null;
+
+// ── Open / close ──────────────────────────────────────────
+function openTransferModal() {
+  document.getElementById('transferModal').classList.add('open');
+  resetTransferModal();
+
+  // Use live data if loaded, otherwise fall back to demo
+  renderQueues(gcLiveQueues.length  ? gcLiveQueues  : DEMO_QUEUES);
+  renderAgents('', gcLiveAgents.length ? gcLiveAgents : DEMO_AGENTS);
+  setTimeout(() => document.getElementById('transferPhoneInput').focus(), 50);
+}
+
+function closeTransferModal() {
+  document.getElementById('transferModal').classList.remove('open');
+}
+
+function handleModalOverlayClick(e) {
+  if (e.target === document.getElementById('transferModal')) closeTransferModal();
+}
+
+function resetTransferModal() {
+  document.getElementById('transferPhoneInput').value = '';
+  document.getElementById('transferUserInput').value  = '';
+  document.getElementById('transferConfirmBtn').disabled = true;
+  document.getElementById('transferStatus').className = 'transfer-status';
+  selectedQueueId = null;
+  selectedAgentId = null;
+  setTransferMode('phone');
+}
+
+// ── Mode tabs ─────────────────────────────────────────────
+function setTransferMode(mode) {
+  transferMode = mode;
+  document.getElementById('transferPhoneMode').style.display = mode === 'phone' ? '' : 'none';
+  document.getElementById('transferQueueMode').style.display = mode === 'queue' ? '' : 'none';
+  document.getElementById('transferUserMode').style.display  = mode === 'user'  ? '' : 'none';
+  ['Phone', 'Queue', 'User'].forEach(m =>
+    document.getElementById('tabBtn' + m).classList.toggle('active', mode === m.toLowerCase())
+  );
+  document.getElementById('transferConfirmBtn').disabled = true;
+  selectedQueueId = null;
+  selectedAgentId = null;
+}
+
+function validateTransferInput() {
+  const val = document.getElementById('transferPhoneInput').value.trim();
+  document.getElementById('transferConfirmBtn').disabled = val.length < 3;
+}
+
+// ── Queue list ────────────────────────────────────────────
+function renderQueues(data) {
+  const list = data || (gcLiveQueues.length ? gcLiveQueues : DEMO_QUEUES);
+  document.getElementById('queueList').innerHTML = list.length
+    ? list.map(q => `
+        <div class="queue-item" id="qi-${q.id}" onclick="selectQueue('${q.id}')">
+          <div class="queue-dot"></div>
+          <span style="flex:1;">${q.name}</span>
+          <span style="font-size:0.75rem;opacity:0.6;">${q.memberCount} members</span>
+        </div>`).join('')
+    : '<div style="padding:12px;color:var(--gray-500);font-size:0.85rem;">Loading queues…</div>';
+}
+
+function selectQueue(id) {
+  selectedQueueId = id;
+  document.querySelectorAll('#queueList .queue-item').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('qi-' + id);
+  if (el) el.classList.add('selected');
+  document.getElementById('transferConfirmBtn').disabled = false;
+}
+
+// ── Agent list ────────────────────────────────────────────
+function renderAgents(filter, data) {
+  const list = (data || (gcLiveAgents.length ? gcLiveAgents : DEMO_AGENTS))
+    .filter(a =>
+      !filter ||
+      a.name.toLowerCase().includes(filter.toLowerCase()) ||
+      a.email.toLowerCase().includes(filter.toLowerCase())
+    );
+  const statusColor = s =>
+    s === 'Available' ? 'var(--green)' : s === 'On Queue' || s === 'Busy' ? 'var(--blue)' : 'var(--amber)';
+
+  document.getElementById('agentList').innerHTML = list.length
+    ? list.map(a => `
+        <div class="queue-item" id="ai-${a.id}" onclick="selectAgent('${a.id}')">
+          <div class="queue-dot" style="background:${statusColor(a.status)}"></div>
+          <div style="flex:1;">
+            <div style="font-size:0.88rem;">${a.name}</div>
+            <div style="font-size:0.72rem;opacity:0.65;font-weight:400;">${a.email}</div>
+          </div>
+          <span style="font-size:0.72rem;opacity:0.65;">${a.status}</span>
+        </div>`).join('')
+    : '<div style="padding:12px;color:var(--gray-500);font-size:0.85rem;">No agents found</div>';
+}
+
+function filterAgents() {
+  renderAgents(document.getElementById('transferUserInput').value);
+  selectedAgentId = null;
+  document.getElementById('transferConfirmBtn').disabled = true;
+}
+
+function selectAgent(id) {
+  selectedAgentId = id;
+  document.querySelectorAll('#agentList .queue-item').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('ai-' + id);
+  if (el) el.classList.add('selected');
+  document.getElementById('transferConfirmBtn').disabled = false;
+}
+
+/* ─────────────────────────────────────────────────────────
+   EXECUTE BLIND TRANSFER
+   POST /api/v2/conversations/calls/{conversationId}
+              /participants/{participantId}/replace
+   voicemail: false  →  blind transfer (no fallback)
+───────────────────────────────────────────────────────── */
+async function executeBlindTransfer() {
+  const btn        = document.getElementById('transferConfirmBtn');
+  const statusEl   = document.getElementById('transferStatus');
+  const statusText = document.getElementById('transferStatusText');
+
+  btn.disabled = true;
+  statusEl.className = 'transfer-status connecting';
+  statusText.textContent = 'Initiating blind transfer…';
+
+  // Build payload
+  let body = { voicemail: false };
+  let description = '';
+
+  if (transferMode === 'phone') {
+    const dest = document.getElementById('transferPhoneInput').value.trim();
+    body.address = dest;
+    description  = dest;
+  } else if (transferMode === 'queue') {
+    const q = [...gcLiveQueues, ...DEMO_QUEUES].find(q => q.id === selectedQueueId);
+    body.queueId = selectedQueueId;
+    description  = q ? q.name : selectedQueueId;
+  } else {
+    const a = [...gcLiveAgents, ...DEMO_AGENTS].find(a => a.id === selectedAgentId);
+    body.userId = selectedAgentId;
+    description = a ? a.name : selectedAgentId;
+  }
+
+  // Guard: need a conversationId and participantId for real calls
+  if (!gcConversationId || !gcParticipantId) {
+    // No active call — show demo success for testing outside of a live interaction
+    console.warn('No active conversationId/participantId — running in demo mode');
+    await new Promise(r => setTimeout(r, 900));
+    statusEl.className  = 'transfer-status success';
+    statusText.textContent = `✓ [Demo] Transfer to ${description} — wire up conversationId for live calls`;
+    toast(`[Demo] Transfer → ${description}`);
+    setTimeout(() => closeTransferModal(), 2500);
+    return;
+  }
+
+  try {
+    // Live Genesys Cloud API call
+    await conversationsApi.postConversationParticipantReplace(
+      gcConversationId,
+      gcParticipantId,
+      body
+    );
+
+    statusEl.className     = 'transfer-status success';
+    statusText.textContent = `✓ Call transferred to ${description}`;
+    toast(`Blind transfer → ${description}`);
+
+    // Notify Genesys Cloud Client App that interaction is complete
+    if (clientApp) clientApp.lifecycle.exitApp();
+    setTimeout(() => closeTransferModal(), 2000);
+
+  } catch (err) {
+    console.error('Transfer failed:', err);
+    const msg = err.body?.message || err.message || 'Unknown error';
+    statusEl.className     = 'transfer-status error';
+    statusText.textContent = `Transfer failed: ${msg}`;
+    btn.disabled = false;
+  }
+}
+</script>
+
+</body>

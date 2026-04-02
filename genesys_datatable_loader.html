@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Genesys Data Table Loader — CallerPhoneOrderLookup</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+<style>
+:root {
+  --navy:     #0f2044;
+  --navy-mid: #1a3261;
+  --orange:   #f47920;
+  --orange-dk:#d4620e;
+  --cream:    #f5f3ef;
+  --white:    #ffffff;
+  --gray-100: #eef0f3;
+  --gray-200: #d8dce3;
+  --gray-500: #6b7a90;
+  --green:    #1e8c5a;
+  --green-lt: #e3f5ed;
+  --amber:    #d97706;
+  --amber-lt: #fef3cd;
+  --red:      #c0392b;
+  --red-lt:   #fde8e6;
+  --blue:     #1a6db5;
+  --radius:   10px;
+  --shadow:   0 3px 12px rgba(15,32,68,0.10);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--cream);
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  color: #3d4a5c;
+  min-height: 100vh;
+}
+.topbar {
+  background: var(--navy);
+  padding: 0 28px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--white);
+}
+.brand span { color: var(--orange); }
+.brand-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin-left: 16px;
+}
+.container { max-width: 720px; margin: 40px auto; padding: 0 20px; }
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+}
+.card-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--navy);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title-accent { width: 3px; height: 18px; background: var(--orange); border-radius: 2px; flex-shrink: 0; }
+.field-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-500);
+  margin-bottom: 5px;
+  display: block;
+}
+.field-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.92rem;
+  color: var(--navy);
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 14px;
+}
+.field-input:focus { border-color: var(--orange); }
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-top: -10px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.btn {
+  padding: 11px 22px;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn-orange { background: var(--orange); color: var(--white); }
+.btn-navy   { background: var(--navy);   color: var(--white); }
+.btn-ghost  { background: var(--gray-100); color: var(--navy); border: 1px solid var(--gray-200); }
+
+/* Progress */
+.progress-wrap {
+  background: var(--gray-200);
+  border-radius: 999px;
+  height: 8px;
+  margin: 12px 0 6px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--orange);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.progress-label {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  margin-bottom: 14px;
+}
+
+/* Log */
+.log-wrap {
+  background: var(--navy);
+  border-radius: 8px;
+  padding: 14px 16px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.log-line { color: rgba(255,255,255,0.7); }
+.log-ok   { color: #2ecc71; }
+.log-err  { color: #e74c3c; }
+.log-info { color: var(--orange); }
+.log-head { color: var(--white); font-weight: bold; }
+
+/* Summary badges */
+.summary {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.badge-green  { background: var(--green-lt); color: var(--green); }
+.badge-red    { background: var(--red-lt);   color: var(--red); }
+.badge-amber  { background: var(--amber-lt); color: var(--amber); }
+
+/* Status dot */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  margin-bottom: 16px;
+}
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #aaa;
+  flex-shrink: 0;
+}
+.dot.ok     { background: #2ecc71; box-shadow: 0 0 5px rgba(46,204,113,0.6); }
+.dot.busy   { background: var(--orange); box-shadow: 0 0 5px rgba(244,121,32,0.6); animation: pulse 1s infinite; }
+.dot.error  { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.divider { height: 1px; background: var(--gray-100); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;">
+    <div class="brand">COMPOSITES <span>ONE</span></div>
+    <div class="brand-sub">Data Table Loader</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Config card -->
+  <div class="card">
+    <div class="card-title"><div class="card-title-accent"></div>Configuration</div>
+
+    <div class="status-row">
+      <div class="dot" id="authDot"></div>
+      <span id="authLabel">Not authenticated</span>
+    </div>
+
+    <label class="field-label">OAuth Client ID</label>
+    <input class="field-input" id="clientId" type="text"
+           value="79b9998d-45f6-46c7-97e7-5019106922ee"
+           placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
+
+    <label class="field-label">Genesys Cloud Region</label>
+    <select class="field-input" id="environment" style="appearance:none;cursor:pointer;">
+      <option value="mypurecloud.com">🇺🇸 US East — Virginia (mypurecloud.com)</option>
+      <option value="usw2.pure.cloud">🇺🇸 US West — Oregon (usw2.pure.cloud)</option>
+      <option value="cac1.pure.cloud">🇨🇦 Canada (cac1.pure.cloud)</option>
+      <option value="mypurecloud.ie">🇮🇪 EU West — Ireland (mypurecloud.ie)</option>
+      <option value="mypurecloud.de">🇩🇪 EU Central — Frankfurt (mypurecloud.de)</option>
+      <option value="aps1.pure.cloud">🇰🇷 Asia Pacific — Seoul (aps1.pure.cloud)</option>
+      <option value="apne2.pure.cloud">🇦🇺 Asia Pacific — Sydney (apne2.pure.cloud)</option>
+    </select>
+
+    <label class="field-label">Data Table ID</label>
+    <input class="field-input" id="tableId" type="text"
+           placeholder="Paste the id from the create response e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
+    <div class="field-hint">Copy the <strong>id</strong> field from the successful POST /api/v2/flows/datatables response.</div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-navy" id="authBtn" onclick="authenticate()">🔐 Authenticate</button>
+      <button class="btn btn-ghost" id="verifyBtn" onclick="verifyTable()" disabled>🔍 Verify Table</button>
+    </div>
+  </div>
+
+  <!-- Load card -->
+  <div class="card">
+    <div class="card-title"><div class="card-title-accent"></div>Load Rows</div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="font-size:0.88rem;color:var(--gray-500);">20 rows ready to load into <strong style="color:var(--navy);">CallerPhoneOrderLookup</strong></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="font-size:0.78rem;padding:6px 12px;" onclick="previewRows()">Preview Data</button>
+        <button class="btn btn-orange" id="loadBtn" onclick="loadAllRows()" disabled>▶ Load All 20 Rows</button>
+      </div>
+    </div>
+
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-label" id="progressLabel">Ready</div>
+
+    <div class="log-wrap" id="logWrap">
+      <div class="log-line log-info">── Genesys Data Table Bulk Loader ──────────────────</div>
+      <div class="log-line log-line">Authenticate first, then click Load All 20 Rows.</div>
+    </div>
+
+    <div class="summary" id="summaryWrap" style="display:none;">
+      <div class="badge badge-green" id="successBadge"></div>
+      <div class="badge badge-red"   id="errorBadge"   style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Preview card (hidden by default) -->
+  <div class="card" id="previewCard" style="display:none;">
+    <div class="card-title"><div class="card-title-accent"></div>Data Preview — First 3 Rows</div>
+    <div id="previewContent" style="font-size:0.82rem;line-height:1.8;color:var(--gray-500);"></div>
+  </div>
+
+</div>
+
+<script>
+/* ── Row data ─────────────────────────────────────────────── */
+const ROWS = [{"key":"9492955945","caller_phone":"(949) 295-5945","customer_key":"C1001","account_number":"ACCT001","customer_name":"Philip Rivers","company_name":"ABC Fabrication","email":"philip.rivers1210@gmail.com","order_number":"SO456781","po_number":"PO99872","order_date":"3/12/26","order_description":"","order_status":"Shipped","total_line_items":"3","shipped_line_items":"3","pending_line_items":"0","estimated_ship_date":"3/20/26","estimated_delivery_date":"3/25/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Dallas","ship_to_state":"TX","delivery_zip":"75201","shipment_key":"SH900001","shipment_number":"S1","shipment_status":"In Transit","carrier":"FedEx","tracking_number":"784512340001","tracking_url":"https://tracking.demo/fedex/784512340001","ship_date":"2026-03-21","actual_delivery_date":"","last_tracking_event":"Departed FedEx location Fort Worth TX","last_tracking_event_date":"2026-03-22","delivery_exception":"","proof_of_delivery_name":""},{"key":"7135550102","caller_phone":"(713) 555-0102","customer_key":"C1002","account_number":"ACCT002","customer_name":"Kevin Morales","company_name":"Prime Panels","email":"kevin.morales@primepanels.com","order_number":"SO456782","po_number":"PO99873","order_date":"3/13/26","order_description":"","order_status":"Partially Shipped","total_line_items":"4","shipped_line_items":"2","pending_line_items":"2","estimated_ship_date":"3/19/26","estimated_delivery_date":"3/26/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Houston","ship_to_state":"TX","delivery_zip":"77002","shipment_key":"SH900002","shipment_number":"S1","shipment_status":"In Transit","carrier":"Old Dominion","tracking_number":"ODFL99873001","tracking_url":"https://tracking.demo/od/ODFL99873001","ship_date":"2026-03-20","actual_delivery_date":"","last_tracking_event":"Arrived at terminal Houston TX","last_tracking_event_date":"2026-03-22","delivery_exception":"","proof_of_delivery_name":""},{"key":"5625550103","caller_phone":"(562) 555-0103","customer_key":"C1003","account_number":"ACCT003","customer_name":"Alicia Turner","company_name":"West Coast Marine","email":"alicia.turner@wcmarine.com","order_number":"SO456783","po_number":"PO99874","order_date":"3/14/26","order_description":"","order_status":"Open","total_line_items":"5","shipped_line_items":"0","pending_line_items":"5","estimated_ship_date":"3/27/26","estimated_delivery_date":"4/2/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Long Beach","ship_to_state":"CA","delivery_zip":"90802","shipment_key":"SH900003","shipment_number":"S1","shipment_status":"Pending","carrier":"","tracking_number":"","tracking_url":"","ship_date":"2026-03-27","actual_delivery_date":"","last_tracking_event":"Order not yet released","last_tracking_event_date":"2026-03-23","delivery_exception":"","proof_of_delivery_name":""},{"key":"3125550104","caller_phone":"(312) 555-0104","customer_key":"C1004","account_number":"ACCT004","customer_name":"Daniel Brooks","company_name":"Northline Composites","email":"daniel.brooks@northlineco.com","order_number":"SO456784","po_number":"PO99875","order_date":"3/10/26","order_description":"","order_status":"Delivered","total_line_items":"2","shipped_line_items":"2","pending_line_items":"0","estimated_ship_date":"3/15/26","estimated_delivery_date":"3/19/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Chicago","ship_to_state":"IL","delivery_zip":"60601","shipment_key":"SH900004","shipment_number":"S1","shipment_status":"Delivered","carrier":"UPS","tracking_number":"1Z999AA10123456784","tracking_url":"https://tracking.demo/ups/1Z999AA10123456784","ship_date":"2026-03-15","actual_delivery_date":"2026-03-19","last_tracking_event":"Delivered at dock","last_tracking_event_date":"2026-03-19","delivery_exception":"","proof_of_delivery_name":"J Carter"},{"key":"3035550105","caller_phone":"(303) 555-0105","customer_key":"C1005","account_number":"ACCT005","customer_name":"Tina Alvarez","company_name":"Rocky Mountain Plastics","email":"tina.alvarez@rmplastics.com","order_number":"SO456785","po_number":"PO99876","order_date":"3/11/26","order_description":"","order_status":"Delayed","total_line_items":"6","shipped_line_items":"0","pending_line_items":"6","estimated_ship_date":"3/18/26","estimated_delivery_date":"3/29/26","on_hold_reason":"","delay_reason":"Carrier capacity constraint","ship_to_city":"Denver","ship_to_state":"CO","delivery_zip":"80202","shipment_key":"SH900005","shipment_number":"S1","shipment_status":"Delayed","carrier":"XPO","tracking_number":"XPO99876001","tracking_url":"https://tracking.demo/xpo/XPO99876001","ship_date":"2026-03-18","actual_delivery_date":"","last_tracking_event":"Pickup delayed carrier capacity","last_tracking_event_date":"2026-03-22","delivery_exception":"Carrier capacity constraint","proof_of_delivery_name":""},{"key":"9725550106","caller_phone":"(972) 555-0106","customer_key":"C1006","account_number":"ACCT006","customer_name":"Robert Chen","company_name":"Lone Star Industrial","email":"robert.chen@lonestarind.com","order_number":"SO456786","po_number":"PO99877","order_date":"3/9/26","order_description":"","order_status":"On Hold","total_line_items":"3","shipped_line_items":"0","pending_line_items":"3","estimated_ship_date":"3/18/26","estimated_delivery_date":"3/28/26","on_hold_reason":"Credit review pending","delay_reason":"","ship_to_city":"Addison","ship_to_state":"TX","delivery_zip":"75001","shipment_key":"SH900006","shipment_number":"S1","shipment_status":"On Hold","carrier":"","tracking_number":"","tracking_url":"","ship_date":"2026-03-18","actual_delivery_date":"","last_tracking_event":"Shipment blocked order on hold","last_tracking_event_date":"2026-03-23","delivery_exception":"Credit review pending","proof_of_delivery_name":""},{"key":"9045550107","caller_phone":"(904) 555-0107","customer_key":"C1007","account_number":"ACCT007","customer_name":"Sarah Mitchell","company_name":"Bluewater Supply","email":"sarah.mitchell@bluewatersupply.com","order_number":"SO456787","po_number":"PO99878","order_date":"3/8/26","order_description":"","order_status":"Shipped","total_line_items":"2","shipped_line_items":"2","pending_line_items":"0","estimated_ship_date":"3/16/26","estimated_delivery_date":"3/22/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Jacksonville","ship_to_state":"FL","delivery_zip":"32202","shipment_key":"SH900007","shipment_number":"S1","shipment_status":"In Transit","carrier":"FedEx","tracking_number":"784512340007","tracking_url":"https://tracking.demo/fedex/784512340007","ship_date":"2026-03-16","actual_delivery_date":"","last_tracking_event":"In transit linehaul","last_tracking_event_date":"2026-03-21","delivery_exception":"","proof_of_delivery_name":""},{"key":"6025550108","caller_phone":"(602) 555-0108","customer_key":"C1008","account_number":"ACCT008","customer_name":"James Patel","company_name":"Frontier Tooling","email":"james.patel@frontiertooling.com","order_number":"SO456788","po_number":"PO99879","order_date":"3/15/26","order_description":"","order_status":"Processing","total_line_items":"3","shipped_line_items":"0","pending_line_items":"3","estimated_ship_date":"3/24/26","estimated_delivery_date":"3/31/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Phoenix","ship_to_state":"AZ","delivery_zip":"85004","shipment_key":"SH900008","shipment_number":"S1","shipment_status":"Preparing","carrier":"","tracking_number":"","tracking_url":"","ship_date":"2026-03-24","actual_delivery_date":"","last_tracking_event":"Warehouse picking","last_tracking_event_date":"2026-03-23","delivery_exception":"","proof_of_delivery_name":""},{"key":"3175550109","caller_phone":"(317) 555-0109","customer_key":"C1009","account_number":"ACCT009","customer_name":"Emily Ross","company_name":"Midwest Molding","email":"emily.ross@midwestmolding.com","order_number":"SO456789","po_number":"PO99880","order_date":"3/7/26","order_description":"","order_status":"Delivered","total_line_items":"4","shipped_line_items":"4","pending_line_items":"0","estimated_ship_date":"3/12/26","estimated_delivery_date":"3/17/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Indianapolis","ship_to_state":"IN","delivery_zip":"46204","shipment_key":"SH900009","shipment_number":"S1","shipment_status":"Delivered","carrier":"SAIA","tracking_number":"SAIA99880001","tracking_url":"https://tracking.demo/saia/SAIA99880001","ship_date":"2026-03-12","actual_delivery_date":"2026-03-17","last_tracking_event":"Delivered signed","last_tracking_event_date":"2026-03-17","delivery_exception":"","proof_of_delivery_name":"M Johnson"},{"key":"7145550110","caller_phone":"(714) 555-0110","customer_key":"C1010","account_number":"ACCT010","customer_name":"Victor Nguyen","company_name":"Precision Fibers","email":"victor.nguyen@precisionfibers.com","order_number":"SO456790","po_number":"PO99881","order_date":"3/16/26","order_description":"","order_status":"Partially Shipped","total_line_items":"5","shipped_line_items":"3","pending_line_items":"2","estimated_ship_date":"3/22/26","estimated_delivery_date":"3/30/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Anaheim","ship_to_state":"CA","delivery_zip":"92805","shipment_key":"SH900010","shipment_number":"S1","shipment_status":"In Transit","carrier":"UPS","tracking_number":"1Z999AA10123456790","tracking_url":"https://tracking.demo/ups/1Z999AA10123456790","ship_date":"2026-03-22","actual_delivery_date":"","last_tracking_event":"Label created accepted","last_tracking_event_date":"2026-03-22","delivery_exception":"","proof_of_delivery_name":""},{"key":"7045550111","caller_phone":"(704) 555-0111","customer_key":"C1011","account_number":"ACCT011","customer_name":"Nicole Adams","company_name":"Atlantic Engineered Parts","email":"nicole.adams@atlanticparts.com","order_number":"SO456791","po_number":"PO99882","order_date":"3/5/26","order_description":"","order_status":"Delivered","total_line_items":"1","shipped_line_items":"1","pending_line_items":"0","estimated_ship_date":"3/8/26","estimated_delivery_date":"3/12/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Charlotte","ship_to_state":"NC","delivery_zip":"28202","shipment_key":"SH900011","shipment_number":"S1","shipment_status":"Delivered","carrier":"FedEx","tracking_number":"784512340011","tracking_url":"https://tracking.demo/fedex/784512340011","ship_date":"2026-03-08","actual_delivery_date":"2026-03-12","last_tracking_event":"Delivered front office","last_tracking_event_date":"2026-03-12","delivery_exception":"","proof_of_delivery_name":"C Evans"},{"key":"2065550112","caller_phone":"(206) 555-0112","customer_key":"C1012","account_number":"ACCT012","customer_name":"Brandon Lee","company_name":"Evergreen Marine Tech","email":"brandon.lee@evergreenmarine.com","order_number":"SO456792","po_number":"PO99883","order_date":"3/14/26","order_description":"","order_status":"Shipped","total_line_items":"2","shipped_line_items":"2","pending_line_items":"0","estimated_ship_date":"3/21/26","estimated_delivery_date":"3/27/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Seattle","ship_to_state":"WA","delivery_zip":"98101","shipment_key":"SH900012","shipment_number":"S1","shipment_status":"In Transit","carrier":"Old Dominion","tracking_number":"ODFL99883001","tracking_url":"https://tracking.demo/od/ODFL99883001","ship_date":"2026-03-21","actual_delivery_date":"","last_tracking_event":"Departed terminal","last_tracking_event_date":"2026-03-22","delivery_exception":"","proof_of_delivery_name":""},{"key":"8015550113","caller_phone":"(801) 555-0113","customer_key":"C1013","account_number":"ACCT013","customer_name":"Megan Foster","company_name":"Summit Build Systems","email":"megan.foster@summitbuild.com","order_number":"SO456793","po_number":"PO99884","order_date":"3/13/26","order_description":"","order_status":"Open","total_line_items":"3","shipped_line_items":"0","pending_line_items":"3","estimated_ship_date":"3/28/26","estimated_delivery_date":"4/3/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Salt Lake City","ship_to_state":"UT","delivery_zip":"84111","shipment_key":"SH900013","shipment_number":"S1","shipment_status":"Pending","carrier":"","tracking_number":"","tracking_url":"","ship_date":"2026-03-28","actual_delivery_date":"","last_tracking_event":"Awaiting inventory","last_tracking_event_date":"2026-03-23","delivery_exception":"","proof_of_delivery_name":""},{"key":"5045550114","caller_phone":"(504) 555-0114","customer_key":"C1014","account_number":"ACCT014","customer_name":"Chris Walker","company_name":"Gulf Coast Panels","email":"chris.walker@gulfcoastpanels.com","order_number":"SO456794","po_number":"PO99885","order_date":"3/6/26","order_description":"","order_status":"Delivered","total_line_items":"2","shipped_line_items":"2","pending_line_items":"0","estimated_ship_date":"3/10/26","estimated_delivery_date":"3/15/26","on_hold_reason":"","delay_reason":"","ship_to_city":"New Orleans","ship_to_state":"LA","delivery_zip":"70112","shipment_key":"SH900014","shipment_number":"S1","shipment_status":"Delivered","carrier":"UPS","tracking_number":"1Z999AA10123456794","tracking_url":"https://tracking.demo/ups/1Z999AA10123456794","ship_date":"2026-03-10","actual_delivery_date":"2026-03-15","last_tracking_event":"Delivered receiving","last_tracking_event_date":"2026-03-15","delivery_exception":"","proof_of_delivery_name":"T Lewis"},{"key":"8165550115","caller_phone":"(816) 555-0115","customer_key":"C1015","account_number":"ACCT015","customer_name":"Olivia Harris","company_name":"Central Composite Works","email":"olivia.harris@ccworks.com","order_number":"SO456795","po_number":"PO99886","order_date":"3/12/26","order_description":"","order_status":"Delayed","total_line_items":"4","shipped_line_items":"1","pending_line_items":"3","estimated_ship_date":"3/19/26","estimated_delivery_date":"3/28/26","on_hold_reason":"","delay_reason":"Weather delay","ship_to_city":"Kansas City","ship_to_state":"MO","delivery_zip":"64106","shipment_key":"SH900015","shipment_number":"S1","shipment_status":"Delayed","carrier":"FedEx Freight","tracking_number":"FXF99886001","tracking_url":"https://tracking.demo/fxf/FXF99886001","ship_date":"2026-03-19","actual_delivery_date":"","last_tracking_event":"Weather delay corridor","last_tracking_event_date":"2026-03-22","delivery_exception":"Weather delay","proof_of_delivery_name":""},{"key":"6175550116","caller_phone":"(617) 555-0116","customer_key":"C1016","account_number":"ACCT016","customer_name":"Tyler Scott","company_name":"Northeast Performance Materials","email":"tyler.scott@nepmaterials.com","order_number":"SO456796","po_number":"PO99887","order_date":"3/11/26","order_description":"","order_status":"Processing","total_line_items":"2","shipped_line_items":"0","pending_line_items":"2","estimated_ship_date":"3/23/26","estimated_delivery_date":"3/29/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Boston","ship_to_state":"MA","delivery_zip":"2108","shipment_key":"SH900016","shipment_number":"S1","shipment_status":"Preparing","carrier":"","tracking_number":"","tracking_url":"","ship_date":"2026-03-23","actual_delivery_date":"","last_tracking_event":"Staged for shipment","last_tracking_event_date":"2026-03-23","delivery_exception":"","proof_of_delivery_name":""},{"key":"5035550117","caller_phone":"(503) 555-0117","customer_key":"C1017","account_number":"ACCT017","customer_name":"Hannah Rivera","company_name":"Pacific Resin Supply","email":"hannah.rivera@pacificresin.com","order_number":"SO456797","po_number":"PO99888","order_date":"3/10/26","order_description":"","order_status":"Shipped","total_line_items":"3","shipped_line_items":"3","pending_line_items":"0","estimated_ship_date":"3/17/26","estimated_delivery_date":"3/24/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Portland","ship_to_state":"OR","delivery_zip":"97204","shipment_key":"SH900017","shipment_number":"S1","shipment_status":"In Transit","carrier":"SAIA","tracking_number":"SAIA99888001","tracking_url":"https://tracking.demo/saia/SAIA99888001","ship_date":"2026-03-17","actual_delivery_date":"","last_tracking_event":"In transit to terminal","last_tracking_event_date":"2026-03-22","delivery_exception":"","proof_of_delivery_name":""},{"key":"5135550118","caller_phone":"(513) 555-0118","customer_key":"C1018","account_number":"ACCT018","customer_name":"Aaron Cooper","company_name":"Tri-State Panels","email":"aaron.cooper@tristatepanels.com","order_number":"SO456798","po_number":"PO99889","order_date":"3/9/26","order_description":"","order_status":"On Hold","total_line_items":"5","shipped_line_items":"0","pending_line_items":"5","estimated_ship_date":"3/18/26","estimated_delivery_date":"3/30/26","on_hold_reason":"Pricing approval required","delay_reason":"","ship_to_city":"Cincinnati","ship_to_state":"OH","delivery_zip":"45202","shipment_key":"SH900018","shipment_number":"S1","shipment_status":"On Hold","carrier":"","tracking_number":"","tracking_url":"","ship_date":"2026-03-18","actual_delivery_date":"","last_tracking_event":"Shipment blocked pricing approval","last_tracking_event_date":"2026-03-23","delivery_exception":"Pricing approval required","proof_of_delivery_name":""},{"key":"9015550119","caller_phone":"(901) 555-0119","customer_key":"C1019","account_number":"ACCT019","customer_name":"Lauren Price","company_name":"Delta Industrial Plastics","email":"lauren.price@deltaindustrial.com","order_number":"SO456799","po_number":"PO99890","order_date":"3/15/26","order_description":"","order_status":"Partially Shipped","total_line_items":"6","shipped_line_items":"4","pending_line_items":"2","estimated_ship_date":"3/21/26","estimated_delivery_date":"3/29/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Memphis","ship_to_state":"TN","delivery_zip":"38103","shipment_key":"SH900019","shipment_number":"S1","shipment_status":"In Transit","carrier":"XPO","tracking_number":"XPO99890001","tracking_url":"https://tracking.demo/xpo/XPO99890001","ship_date":"2026-03-21","actual_delivery_date":"","last_tracking_event":"Departed service center","last_tracking_event_date":"2026-03-22","delivery_exception":"","proof_of_delivery_name":""},{"key":"2155550120","caller_phone":"(215) 555-0120","customer_key":"C1020","account_number":"ACCT020","customer_name":"Jason Reed","company_name":"Keystone Structural Supply","email":"jason.reed@keystonestructural.com","order_number":"SO456800","po_number":"PO99891","order_date":"3/8/26","order_description":"","order_status":"Delivered","total_line_items":"3","shipped_line_items":"3","pending_line_items":"0","estimated_ship_date":"3/13/26","estimated_delivery_date":"3/18/26","on_hold_reason":"","delay_reason":"","ship_to_city":"Philadelphia","ship_to_state":"PA","delivery_zip":"19103","shipment_key":"SH900020","shipment_number":"S1","shipment_status":"Delivered","carrier":"Old Dominion","tracking_number":"ODFL99891001","tracking_url":"https://tracking.demo/od/ODFL99891001","ship_date":"2026-03-13","actual_delivery_date":"2026-03-18","last_tracking_event":"Delivered signed","last_tracking_event_date":"2026-03-18","delivery_exception":"","proof_of_delivery_name":"R Miller"}];
+
+/* ── SDK ─────────────────────────────────────────────────── */
+const platformClient = window.require('platformClient');
+const apiClient      = platformClient.ApiClient.instance;
+let   archApi        = null;
+let   authenticated  = false;
+
+function setAuthStatus(state, msg) {
+  const dot   = document.getElementById('authDot');
+  const label = document.getElementById('authLabel');
+  dot.className = 'dot ' + (state === 'ok' ? 'ok' : state === 'busy' ? 'busy' : state === 'error' ? 'error' : '');
+  label.textContent = msg;
+}
+
+async function authenticate() {
+  const clientId   = document.getElementById('clientId').value.trim();
+  const environment = document.getElementById('environment').value;
+  if (!clientId) { alert('Please enter your OAuth Client ID'); return; }
+
+  setAuthStatus('busy', 'Authenticating…');
+  document.getElementById('authBtn').disabled = true;
+
+  apiClient.setEnvironment(environment);
+  try {
+    await apiClient.loginImplicitGrant(
+      clientId,
+      window.location.href.split('?')[0].split('#')[0],
+      { state: '' }
+    );
+    archApi = new platformClient.ArchitectApi();
+    authenticated = true;
+    setAuthStatus('ok', 'Authenticated — ready to load');
+    document.getElementById('verifyBtn').disabled = false;
+    document.getElementById('loadBtn').disabled   = false;
+    log('Authentication successful', 'ok');
+  } catch (err) {
+    setAuthStatus('error', 'Authentication failed — check Client ID');
+    document.getElementById('authBtn').disabled = false;
+    log('Auth error: ' + err.message, 'err');
+  }
+}
+
+async function verifyTable() {
+  const tableId = document.getElementById('tableId').value.trim();
+  if (!tableId) { alert('Please enter the Data Table ID'); return; }
+  try {
+    const result = await archApi.getFlowsDatatable(tableId, { expand: 'schema' });
+    log(`✓ Table found: "${result.name}" — ${Object.keys(result.schema?.properties || {}).length} fields`, 'ok');
+  } catch (err) {
+    log(`✗ Table not found or access denied: ${err.body?.message || err.message}`, 'err');
+  }
+}
+
+/* ── Row loader ───────────────────────────────────────────── */
+async function loadAllRows() {
+  const tableId = document.getElementById('tableId').value.trim();
+  if (!tableId) { alert('Please enter the Data Table ID first'); return; }
+  if (!authenticated) { alert('Please authenticate first'); return; }
+
+  document.getElementById('loadBtn').disabled = true;
+  document.getElementById('summaryWrap').style.display = 'none';
+  log('── Starting bulk load ─────────────────────────────', 'head');
+  log(`Target table ID: ${tableId}`, 'info');
+
+  let success = 0, errors = 0;
+
+  for (let i = 0; i < ROWS.length; i++) {
+    const row = ROWS[i];
+    const pct = Math.round(((i) / ROWS.length) * 100);
+    setProgress(pct, `Loading row ${i + 1} of ${ROWS.length} — ${row.customer_name} (${row.customer_key})`);
+
+    try {
+      await archApi.postFlowsDatatableRows(tableId, row);
+      log(`✓ [${i+1}/20] ${row.customer_key} — ${row.company_name}`, 'ok');
+      success++;
+    } catch (err) {
+      const msg = err.body?.message || err.message || 'Unknown error';
+      // If row already exists, try updating instead
+      if (err.status === 409 || msg.toLowerCase().includes('conflict') || msg.toLowerCase().includes('already exists')) {
+        try {
+          await archApi.putFlowsDatatableRow(tableId, row.key, row);
+          log(`↻ [${i+1}/20] ${row.customer_key} — updated existing row`, 'info');
+          success++;
+        } catch (upErr) {
+          log(`✗ [${i+1}/20] ${row.customer_key} — ${upErr.body?.message || upErr.message}`, 'err');
+          errors++;
+        }
+      } else {
+        log(`✗ [${i+1}/20] ${row.customer_key} — ${msg}`, 'err');
+        errors++;
+      }
+    }
+
+    // Small delay to avoid rate limiting
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  setProgress(100, `Complete — ${success} loaded, ${errors} errors`);
+  log('── Load complete ──────────────────────────────────', 'head');
+  log(`Loaded: ${success} rows  |  Errors: ${errors} rows`, success === 20 ? 'ok' : 'info');
+
+  const sw = document.getElementById('summaryWrap');
+  sw.style.display = 'flex';
+  document.getElementById('successBadge').textContent = `✓ ${success} rows loaded`;
+  const eb = document.getElementById('errorBadge');
+  if (errors > 0) {
+    eb.style.display = '';
+    eb.textContent = `✗ ${errors} errors`;
+  } else {
+    eb.style.display = 'none';
+  }
+
+  document.getElementById('loadBtn').disabled = false;
+}
+
+/* ── Preview ──────────────────────────────────────────────── */
+function previewRows() {
+  const card = document.getElementById('previewCard');
+  const content = document.getElementById('previewContent');
+  card.style.display = card.style.display === 'none' ? '' : 'none';
+  content.innerHTML = ROWS.slice(0, 3).map(r => `
+    <div style="margin-bottom:14px;padding:10px 12px;background:var(--gray-100);border-radius:8px;">
+      <div style="font-weight:600;color:var(--navy);margin-bottom:4px;">${r.customer_key} — ${r.company_name} (${r.customer_name})</div>
+      <div>Key: <code>${r.key}</code> &nbsp;|&nbsp; Phone: ${r.caller_phone} &nbsp;|&nbsp; Status: <strong>${r.order_status}</strong></div>
+      <div>Order: ${r.order_number} &nbsp;|&nbsp; Carrier: ${r.carrier || '—'} &nbsp;|&nbsp; Shipment: ${r.shipment_status}</div>
+    </div>`).join('');
+}
+
+/* ── Helpers ──────────────────────────────────────────────── */
+function log(msg, type) {
+  const wrap = document.getElementById('logWrap');
+  const line = document.createElement('div');
+  line.className = 'log-line log-' + (type || 'line');
+  line.textContent = msg;
+  wrap.appendChild(line);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+// Auto-authenticate if returning from OAuth redirect
+window.addEventListener('load', () => {
+  if (window.location.hash.includes('access_token')) {
+    authenticate();
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1841,7 +1841,7 @@ let clientApp;
 
 // ── URL params injected by Genesys Architect ──────────────
 const urlParams     = new URLSearchParams(window.location.search);
-gcConversationId    = urlParams.get('conversationId') || null;
+gcConversationId = urlParams.get('conversationId') || urlParams.get('pcConversationId') || null;
 
 /* ─────────────────────────────────────────────────────────
    initSDK() — called after wizard saves config, or on load
@@ -1870,7 +1870,7 @@ function initSDK() {
 
     if (data.state) {
       const restored = new URLSearchParams(data.state);
-      gcConversationId = gcConversationId || restored.get('conversationId');
+      gcConversationId = gcConversationId || restored.get('conversationId') || restored.get('pcConversationId');
       const ani = restored.get('ANI') || restored.get('phone') || restored.get('DNIS');
       if (ani && !selectedCustomer) attemptScreenPop(ani);
     }

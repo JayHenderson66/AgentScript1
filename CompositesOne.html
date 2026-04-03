@@ -1262,6 +1262,7 @@ searchInput.addEventListener('input', () => {
     c.customer_name.toLowerCase().includes(q) ||
     c.company_name.toLowerCase().includes(q) ||
     c.account_number.toLowerCase().includes(q) ||
+    c.key.toLowerCase().includes(q) ||
     String(c.phone_normalized).includes(q)
   ).slice(0, 8);
 
@@ -1551,7 +1552,11 @@ function doScreenPop() {
   // Priority 1: customer_id passed by AVA — matches customer key (e.g. C1001)
   const autoCustomerId = getParam('customer_id') || getParam('customerId') || getParam('AccountID');
   if (autoCustomerId) {
-    const match = CUSTOMERS.find(c => c.key.toLowerCase() === autoCustomerId.toLowerCase());
+    // Match against key (C1001) OR account_number (ACCT001)
+    const match = CUSTOMERS.find(c =>
+      c.key.toLowerCase() === autoCustomerId.toLowerCase() ||
+      c.account_number.toLowerCase() === autoCustomerId.toLowerCase()
+    );
     if (match) { selectCustomer(match.key); toast('Screen pop: ' + match.company_name); return; }
   }
 
@@ -1917,7 +1922,11 @@ async function fetchCustomerIdFromConversation() {
       const attrs = participant.attributes || {};
       const customerId = attrs['CustomerId'] || attrs['customerId'] || attrs['customer_id'];
       if (customerId) {
-        const match = CUSTOMERS.find(c => c.key.toLowerCase() === customerId.toLowerCase());
+        // Match against key (C1001) OR account_number (ACCT001)
+        const match = CUSTOMERS.find(c =>
+          c.key.toLowerCase() === customerId.toLowerCase() ||
+          c.account_number.toLowerCase() === customerId.toLowerCase()
+        );
         if (match) {
           selectCustomer(match.key);
           toast('Screen pop: ' + match.company_name);

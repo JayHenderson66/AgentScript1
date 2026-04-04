@@ -1550,7 +1550,7 @@ function getParam(name) {
 
 function doScreenPop() {
   // Priority 1: customer_id passed by AVA — matches customer key (e.g. C1001)
-  const autoCustomerId = getParam('customer_id') || getParam('customerId') || getParam('AccountID');
+  const autoCustomerId = getParam('customer_id') || getParam('customerId') || getParam('AccountID') || getParam('AccountNumber') || getParam('account_number');
   if (autoCustomerId) {
     // Match against key (C1001) OR account_number (ACCT001)
     const match = CUSTOMERS.find(c =>
@@ -1849,82 +1849,57 @@ gcConversationId = urlParams.get('conversationId') || urlParams.get('pcConversat
    initSDK() — called after wizard saves config, or on load
    if config already exists in localStorage.
 ───────────────────────────────────────────────────────── */
-function waitForSDK(callback, attempts) {
-  attempts = attempts || 0;
-  if (window.purecloud && window.purecloud.apps && window.purecloud.apps.ClientApp) {
-    ClientApp = window.purecloud.apps.ClientApp;
-    callback();
-  } else if (attempts > 40) {
-    console.warn('Client Apps SDK did not load — running in standalone mode');
-    callback();
-  } else {
-    setTimeout(() => waitForSDK(callback, attempts + 1), 250);
+function isInsideGenesysWidget() {
+  // If we're in an iframe inside apps.mypurecloud.com we're in a widget
+  try {
+    return window.self !== window.top;
+  } catch(e) {
+    return true;
   }
 }
 
 function initSDK() {
-  // Get platformClient — Genesys injects it via window.require in widget context
+  const pcEnvironment = urlParams.get('pcEnvironment') || GC_CONFIG.environment;
+  gcEnvironment = pcEnvironment;
+
+  // ── WIDGET CONTEXT ─────────────────────────────────────
+  // Inside the Genesys agent desktop iframe, OAuth redirects are blocked.
+  // The screen pop works purely from URL params + embedded data — no auth needed.
+  // The blind transfer uses demo mode when unauthenticated.
+  if (isInsideGenesysWidget()) {
+    console.log('Running inside Genesys widget — skipping OAuth');
+    setStatus('connected', null);
+
+    // Use platformClient injected by Genesys if available (no auth needed for screen pop)
+    try {
+      if (window.require) {
+        platformClient = window.require('platformClient');
+        apiClient      = platformClient.ApiClient.instance;
+        conversationsApi = new platformClient.ConversationsApi();
+        routingApi       = new platformClient.RoutingApi();
+        usersApi         = new platformClient.UsersApi();
+      }
+    } catch(e) {
+      console.warn('platformClient not available:', e);
+    }
+
+    // Run screen pop from URL params immediately
+    doScreenPop();
+    return;
+  }
+
+  // ── STANDALONE CONTEXT (opened directly in browser) ────
+  // Full OAuth flow for standalone testing and the setup wizard
   try {
     if (window.require) {
       platformClient = window.require('platformClient');
       apiClient      = platformClient.ApiClient.instance;
     }
-  } catch(e) {
-    console.warn('platformClient not available:', e);
-  }
+  } catch(e) {}
 
-  const pcEnvironment = urlParams.get('pcEnvironment') || GC_CONFIG.environment;
-  gcEnvironment = pcEnvironment;
-
-  waitForSDK(() => {
-    // ── WIDGET CONTEXT: use Client Apps SDK to get token from parent ──
-    // Never call loginImplicitGrant inside an iframe — it forces a new login
-    if (ClientApp && apiClient) {
-      try {
-        clientApp = new ClientApp({ pcEnvironment });
-        apiClient.setEnvironment(gcEnvironment);
-
-        // Get the auth token from the parent Genesys window (no redirect needed)
-        clientApp.environment.getEnvironmentInfo()
-          .then(envInfo => {
-            console.log('GC environment info:', envInfo);
-            return clientApp.users.getUserData();
-          })
-          .then(userData => {
-            console.log('GC user data received');
-            // Token is now set on apiClient by the SDK
-            conversationsApi = new platformClient.ConversationsApi();
-            routingApi       = new platformClient.RoutingApi();
-            usersApi         = new platformClient.UsersApi();
-            setStatus('connected', {});
-            return Promise.all([
-              fetchActiveParticipant(),
-              fetchLiveQueues(),
-              fetchLiveAgents()
-            ]);
-          })
-          .then(() => {
-            if (!selectedCustomer) fetchCustomerIdFromConversation();
-          })
-          .catch(err => {
-            console.warn('Client Apps auth failed, trying direct token:', err);
-            tryDirectAuth(pcEnvironment);
-          });
-        return;
-      } catch(e) {
-        console.warn('ClientApp init failed:', e);
-      }
-    }
-
-    // ── STANDALONE/FALLBACK: standard OAuth (outside widget context) ──
-    tryDirectAuth(pcEnvironment);
-  });
-}
-
-function tryDirectAuth(pcEnvironment) {
   if (!apiClient) { setStatus('error'); return; }
-  apiClient.setEnvironment(pcEnvironment || gcEnvironment || GC_CONFIG.environment);
 
+  apiClient.setEnvironment(pcEnvironment);
   apiClient.loginImplicitGrant(
     GC_CONFIG.clientId,
     window.location.href.split('?')[0].split('#')[0],
@@ -1941,13 +1916,7 @@ function tryDirectAuth(pcEnvironment) {
     usersApi         = new platformClient.UsersApi();
     setStatus('connected', data);
     if (!selectedCustomer) doScreenPop();
-    return Promise.all([
-      fetchActiveParticipant(),
-      fetchLiveQueues(),
-      fetchLiveAgents()
-    ]).then(() => {
-      if (!selectedCustomer) fetchCustomerIdFromConversation();
-    });
+    return Promise.all([fetchLiveQueues(), fetchLiveAgents()]);
   })
   .catch(err => {
     console.error('Auth error:', err);
@@ -2098,7 +2067,7 @@ function setStatus(state, data) {
   const s = map[state] || map.authenticating;
   dot.style.background  = s.color;
   dot.style.boxShadow   = `0 0 6px ${s.shadow}`;
-  label.textContent     = state === 'connected' && data
+  label.textContent = state === 'connected' && data !== undefined
     ? `Connected · ${gcConversationId ? 'Call Active' : 'No Active Call'}`
     : s.text;
 }

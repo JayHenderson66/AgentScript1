@@ -43,11 +43,11 @@ const GC_CONFIG = loadConfig();
 </script>
 <style>
 :root {
-  --navy:      #0f2044;
-  --navy-mid:  #1a3261;
-  --orange:    #f47920;
-  --orange-dk: #d4620e;
-  --cream:     #f5f3ef;
+  --navy:      #2B2A72;
+  --navy-mid:  #3D3A8C;
+  --orange:    #9B6B9B;
+  --orange-dk: #7A4F7A;
+  --cream:     #F4F3F8;
   --white:     #ffffff;
   --gray-100:  #eef0f3;
   --gray-200:  #d8dce3;
@@ -59,11 +59,11 @@ const GC_CONFIG = loadConfig();
   --amber-lt:  #fef3cd;
   --red:       #c0392b;
   --red-lt:    #fde8e6;
-  --blue:      #1a6db5;
-  --blue-lt:   #e5f0fb;
+  --blue:      #3D3A8C;
+  --blue-lt:   #ECEAF8;
   --radius:    10px;
-  --shadow:    0 3px 12px rgba(15,32,68,0.10);
-  --shadow-lg: 0 8px 28px rgba(15,32,68,0.16);
+  --shadow:    0 3px 12px rgba(43,42,114,0.10);
+  --shadow-lg: 0 8px 28px rgba(43,42,114,0.16);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -95,14 +95,12 @@ body {
   gap: 12px;
 }
 .brand-logo {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 6px;
   line-height: 1;
 }
-.brand-logo span { color: var(--orange); }
+.brand-logo > span { color: var(--orange); }
 .brand-divider {
   width: 1px;
   height: 24px;
@@ -585,7 +583,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15,32,68,0.55);
+  background: rgba(43,42,114,0.55);
   backdrop-filter: blur(3px);
   z-index: 1000;
   display: flex;
@@ -602,7 +600,7 @@ body {
 .modal-box {
   background: var(--white);
   border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(15,32,68,0.3);
+  box-shadow: 0 20px 60px rgba(43,42,114,0.3);
   width: 420px;
   max-width: 95vw;
   transform: translateY(12px) scale(0.97);
@@ -779,7 +777,7 @@ body {
 .setup-box {
   background: var(--white);
   border-radius: 16px;
-  box-shadow: 0 24px 80px rgba(15,32,68,0.5);
+  box-shadow: 0 24px 80px rgba(43,42,114,0.5);
   width: 500px;
   max-width: 95vw;
   overflow: hidden;
@@ -872,7 +870,7 @@ body {
 }
 .setup-input:focus {
   border-color: var(--orange);
-  box-shadow: 0 0 0 3px rgba(244,121,32,0.15);
+  box-shadow: 0 0 0 3px rgba(155,107,155,0.20);
 }
 .setup-input.valid {
   border-color: var(--green);
@@ -977,7 +975,15 @@ body {
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="brand-logo">COMPOSITES <span>ONE</span></div>
+    <div class="brand-logo">
+      <svg width="36" height="28" viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:2px;">
+        <!-- Outer indigo circle (left) -->
+        <ellipse cx="13" cy="14" rx="10" ry="12" stroke="#FFFFFF" stroke-width="2.5" fill="none"/>
+        <!-- Inner mauve circle (right/overlap) -->
+        <ellipse cx="21" cy="14" rx="10" ry="12" stroke="rgba(155,107,155,0.85)" stroke-width="2.5" fill="none"/>
+      </svg>
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:700;letter-spacing:1px;color:#fff;">COMPOSITES <span style="color:var(--orange);">ONE</span></span>
+    </div>
     <div class="brand-divider"></div>
     <div class="brand-subtitle">Agent Script · Genesys Cloud</div>
   </div>
@@ -1031,7 +1037,7 @@ body {
         <button class="btn btn-ghost btn-sm" onclick="switchTab('workflow')">✅ Call Workflow</button>
         <button class="btn btn-danger btn-sm" onclick="escalate()">⚠ Escalate</button>
         <button class="btn btn-sm" onclick="openTransferModal()"
-                style="background:linear-gradient(135deg,#1a3261,#0f2044);color:var(--white);border:1px solid rgba(244,121,32,0.4);">
+                style="background:linear-gradient(135deg,#3D3A8C,#2B2A72);color:var(--white);border:1px solid rgba(155,107,155,0.4);">
           ↔ Blind Transfer
         </button>
       </div>
@@ -1602,7 +1608,13 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="setup-box">
 
     <div class="setup-header">
-      <div class="setup-logo">COMPOSITES <span>ONE</span></div>
+      <div class="setup-logo">
+        <svg width="28" height="22" viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;opacity:0.85;">
+          <ellipse cx="13" cy="14" rx="10" ry="12" stroke="#FFFFFF" stroke-width="2.5" fill="none"/>
+          <ellipse cx="21" cy="14" rx="10" ry="12" stroke="rgba(155,107,155,0.85)" stroke-width="2.5" fill="none"/>
+        </svg>
+        COMPOSITES <span>ONE</span>
+      </div>
       <div class="setup-title">Genesys Cloud Setup</div>
       <div class="setup-subtitle">Enter your org's configuration to enable live transfer, screen pop, and authentication.</div>
     </div>

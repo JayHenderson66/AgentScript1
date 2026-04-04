@@ -1577,6 +1577,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = window.location.search || '(none)';
   document.getElementById('debugParams').textContent = params;
   doScreenPop();
+
+  // Listen for postMessage from Genesys Script Editor parent window
+  window.addEventListener('message', (event) => {
+    console.log('postMessage received:', JSON.stringify(event.data));
+    document.getElementById('debugParams').textContent =
+      (window.location.search || '(none)') + ' | msg: ' + JSON.stringify(event.data);
+
+    // Try to extract AccountNumber or CustomerId from message
+    const data = event.data || {};
+    const acct = data.AccountNumber || data.accountNumber ||
+                 data.CustomerId   || data.customerId   ||
+                 data.account_number;
+    if (acct && !selectedCustomer) {
+      const match = CUSTOMERS.find(c =>
+        c.key.toLowerCase()            === acct.toLowerCase() ||
+        c.account_number.toLowerCase() === acct.toLowerCase()
+      );
+      if (match) {
+        selectCustomer(match.key);
+        toast('Screen pop: ' + match.company_name);
+      }
+    }
+  });
 });
 </script>
 <!-- ─── SETUP WIZARD ──────────────────────────────────────── -->

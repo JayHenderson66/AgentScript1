@@ -1262,7 +1262,6 @@ searchInput.addEventListener('input', () => {
     c.customer_name.toLowerCase().includes(q) ||
     c.company_name.toLowerCase().includes(q) ||
     c.account_number.toLowerCase().includes(q) ||
-    c.key.toLowerCase().includes(q) ||
     String(c.phone_normalized).includes(q)
   ).slice(0, 8);
 
@@ -1552,11 +1551,7 @@ function doScreenPop() {
   // Priority 1: customer_id passed by AVA — matches customer key (e.g. C1001)
   const autoCustomerId = getParam('customer_id') || getParam('customerId') || getParam('AccountID');
   if (autoCustomerId) {
-    // Match against key (C1001) OR account_number (ACCT001)
-    const match = CUSTOMERS.find(c =>
-      c.key.toLowerCase() === autoCustomerId.toLowerCase() ||
-      c.account_number.toLowerCase() === autoCustomerId.toLowerCase()
-    );
+    const match = CUSTOMERS.find(c => c.key.toLowerCase() === autoCustomerId.toLowerCase());
     if (match) { selectCustomer(match.key); toast('Screen pop: ' + match.company_name); return; }
   }
 
@@ -1821,11 +1816,9 @@ function saveSetupAndInit() {
 ═══════════════════════════════════════════════════════════ */
 
 // ── SDK references ────────────────────────────────────────
-// platformClient is injected by Genesys via window.require
-// purecloud Client Apps SDK loads async — wait for it safely
-let ClientApp        = null;
-let platformClient   = null;
-let apiClient        = null;
+const ClientApp      = window.purecloud.apps.ClientApp;
+const platformClient = window.require('platformClient');
+const apiClient      = platformClient.ApiClient.instance;
 
 // ── API instances (created after auth) ───────────────────
 let conversationsApi = null;
@@ -1843,91 +1836,60 @@ let clientApp;
 
 // ── URL params injected by Genesys Architect ──────────────
 const urlParams     = new URLSearchParams(window.location.search);
-gcConversationId = urlParams.get('conversationId') || urlParams.get('pcConversationId') || null;
+gcConversationId    = urlParams.get('conversationId') || null;
 
 /* ─────────────────────────────────────────────────────────
    initSDK() — called after wizard saves config, or on load
    if config already exists in localStorage.
 ───────────────────────────────────────────────────────── */
-function waitForSDK(callback, attempts) {
-  attempts = attempts || 0;
-  if (window.purecloud && window.purecloud.apps && window.purecloud.apps.ClientApp) {
-    ClientApp = window.purecloud.apps.ClientApp;
-    callback();
-  } else if (attempts > 40) {
-    console.warn('Client Apps SDK did not load in time — continuing without it');
-    callback();
-  } else {
-    setTimeout(() => waitForSDK(callback, attempts + 1), 250);
-  }
-}
-
 function initSDK() {
-  // Get platformClient from window.require (Genesys injects it in widget context)
-  try {
-    if (window.require) {
-      platformClient = window.require('platformClient');
-      apiClient      = platformClient.ApiClient.instance;
-    }
-  } catch(e) {
-    console.warn('platformClient not available:', e);
-  }
-
+  // Architect ?pcEnvironment= always wins over saved config
   const pcEnvironment = urlParams.get('pcEnvironment') || GC_CONFIG.environment;
   gcEnvironment = pcEnvironment;
 
-  waitForSDK(() => {
-    // Init Client Apps SDK if available
-    try {
-      if (ClientApp) {
-        clientApp = new ClientApp({ pcEnvironment });
-        console.log('ClientApp initialized successfully');
-      }
-    } catch (e) {
-      console.warn('ClientApp init warning:', e);
+  try {
+    clientApp = new ClientApp({ pcEnvironment });
+  } catch (e) {
+    console.warn('ClientApp SDK init warning:', e);
+  }
+
+  apiClient.setEnvironment(gcEnvironment);
+
+  apiClient.loginImplicitGrant(
+    GC_CONFIG.clientId,
+    window.location.href.split('?')[0].split('#')[0],
+    { state: window.location.search }
+  )
+  .then(data => {
+    gcAccessToken = data.accessToken;
+
+    if (data.state) {
+      const restored = new URLSearchParams(data.state);
+      gcConversationId = gcConversationId || restored.get('conversationId');
+      const ani = restored.get('ANI') || restored.get('phone') || restored.get('DNIS');
+      if (ani && !selectedCustomer) attemptScreenPop(ani);
     }
 
-    if (!apiClient) {
-      setStatus('error');
-      console.warn('No apiClient — cannot authenticate');
-      return;
-    }
+    // Re-run screen pop after auth in case params were restored from state
+    if (!selectedCustomer) doScreenPop();
 
-    apiClient.setEnvironment(gcEnvironment);
+    conversationsApi = new platformClient.ConversationsApi();
+    routingApi       = new platformClient.RoutingApi();
+    usersApi         = new platformClient.UsersApi();
 
-    apiClient.loginImplicitGrant(
-      GC_CONFIG.clientId,
-      window.location.href.split('?')[0].split('#')[0],
-      { state: window.location.search }
-    )
-    .then(data => {
-      gcAccessToken = data.accessToken;
-
-      if (data.state) {
-        const restored = new URLSearchParams(data.state);
-        gcConversationId = gcConversationId || restored.get('conversationId') || restored.get('pcConversationId');
-      }
-
-      conversationsApi = new platformClient.ConversationsApi();
-      routingApi       = new platformClient.RoutingApi();
-      usersApi         = new platformClient.UsersApi();
-
-      setStatus('connected', data);
-      if (!selectedCustomer) doScreenPop();
-
-      return Promise.all([
-        fetchActiveParticipant(),
-        fetchLiveQueues(),
-        fetchLiveAgents()
-      ]).then(() => {
-        if (!selectedCustomer) fetchCustomerIdFromConversation();
-      });
-    })
-    .catch(err => {
-      console.error('GC auth error:', err);
-      setStatus('error');
-      if (!selectedCustomer) doScreenPop();
+    setStatus('connected', data);
+    return Promise.all([
+      fetchActiveParticipant(),
+      fetchLiveQueues(),
+      fetchLiveAgents()
+    ]).then(() => {
+      // After fetching participant, try to get CustomerId from participant data
+      if (!selectedCustomer) fetchCustomerIdFromConversation();
     });
+  })
+  .catch(err => {
+    console.error('GC auth error:', err);
+    setStatus('error');
   });
 }
 
@@ -1955,11 +1917,7 @@ async function fetchCustomerIdFromConversation() {
       const attrs = participant.attributes || {};
       const customerId = attrs['CustomerId'] || attrs['customerId'] || attrs['customer_id'];
       if (customerId) {
-        // Match against key (C1001) OR account_number (ACCT001)
-        const match = CUSTOMERS.find(c =>
-          c.key.toLowerCase() === customerId.toLowerCase() ||
-          c.account_number.toLowerCase() === customerId.toLowerCase()
-        );
+        const match = CUSTOMERS.find(c => c.key.toLowerCase() === customerId.toLowerCase());
         if (match) {
           selectCustomer(match.key);
           toast('Screen pop: ' + match.company_name);

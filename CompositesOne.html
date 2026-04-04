@@ -1855,7 +1855,7 @@ function waitForSDK(callback, attempts) {
     ClientApp = window.purecloud.apps.ClientApp;
     callback();
   } else if (attempts > 40) {
-    console.warn('Client Apps SDK did not load in time — continuing without it');
+    console.warn('Client Apps SDK did not load — running in standalone mode');
     callback();
   } else {
     setTimeout(() => waitForSDK(callback, attempts + 1), 250);
@@ -1863,7 +1863,7 @@ function waitForSDK(callback, attempts) {
 }
 
 function initSDK() {
-  // Get platformClient from window.require (Genesys injects it in widget context)
+  // Get platformClient — Genesys injects it via window.require in widget context
   try {
     if (window.require) {
       platformClient = window.require('platformClient');
@@ -1877,57 +1877,82 @@ function initSDK() {
   gcEnvironment = pcEnvironment;
 
   waitForSDK(() => {
-    // Init Client Apps SDK if available
-    try {
-      if (ClientApp) {
+    // ── WIDGET CONTEXT: use Client Apps SDK to get token from parent ──
+    // Never call loginImplicitGrant inside an iframe — it forces a new login
+    if (ClientApp && apiClient) {
+      try {
         clientApp = new ClientApp({ pcEnvironment });
-        console.log('ClientApp initialized successfully');
+        apiClient.setEnvironment(gcEnvironment);
+
+        // Get the auth token from the parent Genesys window (no redirect needed)
+        clientApp.environment.getEnvironmentInfo()
+          .then(envInfo => {
+            console.log('GC environment info:', envInfo);
+            return clientApp.users.getUserData();
+          })
+          .then(userData => {
+            console.log('GC user data received');
+            // Token is now set on apiClient by the SDK
+            conversationsApi = new platformClient.ConversationsApi();
+            routingApi       = new platformClient.RoutingApi();
+            usersApi         = new platformClient.UsersApi();
+            setStatus('connected', {});
+            return Promise.all([
+              fetchActiveParticipant(),
+              fetchLiveQueues(),
+              fetchLiveAgents()
+            ]);
+          })
+          .then(() => {
+            if (!selectedCustomer) fetchCustomerIdFromConversation();
+          })
+          .catch(err => {
+            console.warn('Client Apps auth failed, trying direct token:', err);
+            tryDirectAuth(pcEnvironment);
+          });
+        return;
+      } catch(e) {
+        console.warn('ClientApp init failed:', e);
       }
-    } catch (e) {
-      console.warn('ClientApp init warning:', e);
     }
 
-    if (!apiClient) {
-      setStatus('error');
-      console.warn('No apiClient — cannot authenticate');
-      return;
+    // ── STANDALONE/FALLBACK: standard OAuth (outside widget context) ──
+    tryDirectAuth(pcEnvironment);
+  });
+}
+
+function tryDirectAuth(pcEnvironment) {
+  if (!apiClient) { setStatus('error'); return; }
+  apiClient.setEnvironment(pcEnvironment || gcEnvironment || GC_CONFIG.environment);
+
+  apiClient.loginImplicitGrant(
+    GC_CONFIG.clientId,
+    window.location.href.split('?')[0].split('#')[0],
+    { state: window.location.search }
+  )
+  .then(data => {
+    gcAccessToken = data.accessToken;
+    if (data.state) {
+      const restored = new URLSearchParams(data.state);
+      gcConversationId = gcConversationId || restored.get('conversationId') || restored.get('pcConversationId');
     }
-
-    apiClient.setEnvironment(gcEnvironment);
-
-    apiClient.loginImplicitGrant(
-      GC_CONFIG.clientId,
-      window.location.href.split('?')[0].split('#')[0],
-      { state: window.location.search }
-    )
-    .then(data => {
-      gcAccessToken = data.accessToken;
-
-      if (data.state) {
-        const restored = new URLSearchParams(data.state);
-        gcConversationId = gcConversationId || restored.get('conversationId') || restored.get('pcConversationId');
-      }
-
-      conversationsApi = new platformClient.ConversationsApi();
-      routingApi       = new platformClient.RoutingApi();
-      usersApi         = new platformClient.UsersApi();
-
-      setStatus('connected', data);
-      if (!selectedCustomer) doScreenPop();
-
-      return Promise.all([
-        fetchActiveParticipant(),
-        fetchLiveQueues(),
-        fetchLiveAgents()
-      ]).then(() => {
-        if (!selectedCustomer) fetchCustomerIdFromConversation();
-      });
-    })
-    .catch(err => {
-      console.error('GC auth error:', err);
-      setStatus('error');
-      if (!selectedCustomer) doScreenPop();
+    conversationsApi = new platformClient.ConversationsApi();
+    routingApi       = new platformClient.RoutingApi();
+    usersApi         = new platformClient.UsersApi();
+    setStatus('connected', data);
+    if (!selectedCustomer) doScreenPop();
+    return Promise.all([
+      fetchActiveParticipant(),
+      fetchLiveQueues(),
+      fetchLiveAgents()
+    ]).then(() => {
+      if (!selectedCustomer) fetchCustomerIdFromConversation();
     });
+  })
+  .catch(err => {
+    console.error('Auth error:', err);
+    setStatus('error');
+    if (!selectedCustomer) doScreenPop();
   });
 }
 

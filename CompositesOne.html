@@ -793,11 +793,15 @@ body {
   position: relative;
 }
 .setup-logo {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: rgba(255,255,255,0.5);
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   margin-bottom: 10px;
 }
 .setup-logo span { color: var(--orange); }
@@ -976,17 +980,14 @@ body {
 <div class="topbar">
   <div class="topbar-brand">
     <div class="brand-logo">
-      <svg width="38" height="30" viewBox="0 0 52 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-        <defs>
-          <clipPath id="cl-tb"><rect x="0" y="0" width="29" height="40"/></clipPath>
-          <clipPath id="cr-tb"><rect x="22" y="0" width="30" height="40"/></clipPath>
-        </defs>
-        <!-- Left C — white on dark topbar -->
-        <circle cx="18" cy="20" r="15" stroke="#FFFFFF" stroke-width="4.5" clip-path="url(#cl-tb)"/>
-        <!-- Right C — mauve -->
-        <circle cx="32" cy="20" r="15" stroke="rgba(195,158,210,0.92)" stroke-width="4.5" clip-path="url(#cr-tb)"/>
+      <svg width="46" height="36" viewBox="0 0 54 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+        <!-- Left bold C arc: ~286° sweep, flat ends, opening faces right -->
+        <!-- Arc center ≈ (19,21) radius=15; endpoints at ±37° of 3-o'clock -->
+        <path d="M 31 12 A 15 15 0 1 0 31 30" stroke="#FFFFFF" stroke-width="5.5" fill="none"/>
+        <!-- Right thinner full circle (mauve), overlapping left arc ~35% -->
+        <circle cx="37" cy="21" r="14" stroke="rgba(195,158,210,0.95)" stroke-width="3" fill="none"/>
       </svg>
-      <span style="font-family:'Barlow',sans-serif;font-size:0.92rem;font-weight:600;letter-spacing:2.5px;color:#fff;text-transform:uppercase;white-space:nowrap;">COMPOSITES <span style="color:rgba(195,158,210,1);">ONE</span><sup style="font-size:0.55em;letter-spacing:0;vertical-align:super;margin-left:1px;">®</sup></span>
+      <span style="font-family:'Barlow',sans-serif;font-size:0.9rem;font-weight:600;letter-spacing:2px;color:#fff;text-transform:uppercase;white-space:nowrap;">COMPOSITES <span style="color:rgba(195,158,210,1);">ONE</span><sup style="font-size:0.55em;letter-spacing:0;vertical-align:super;margin-left:1px;">®</sup></span>
     </div>
     <div class="brand-divider"></div>
     <div class="brand-subtitle">Agent Script · Genesys Cloud</div>
@@ -1613,13 +1614,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div class="setup-header">
       <div class="setup-logo">
-        <svg width="30" height="24" viewBox="0 0 52 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;vertical-align:middle;margin-right:2px;opacity:0.8;">
-          <defs>
-            <clipPath id="cl-sw"><rect x="0" y="0" width="29" height="40"/></clipPath>
-            <clipPath id="cr-sw"><rect x="22" y="0" width="30" height="40"/></clipPath>
-          </defs>
-          <circle cx="18" cy="20" r="15" stroke="#FFFFFF" stroke-width="4.5" clip-path="url(#cl-sw)"/>
-          <circle cx="32" cy="20" r="15" stroke="rgba(195,158,210,0.9)" stroke-width="4.5" clip-path="url(#cr-sw)"/>
+        <svg width="34" height="28" viewBox="0 0 54 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;opacity:0.8;">
+          <path d="M 31 12 A 15 15 0 1 0 31 30" stroke="#FFFFFF" stroke-width="5.5" fill="none"/>
+          <circle cx="37" cy="21" r="14" stroke="rgba(195,158,210,0.95)" stroke-width="3" fill="none"/>
         </svg>
         COMPOSITES <span>ONE</span>
       </div>

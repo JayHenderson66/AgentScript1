@@ -1574,16 +1574,11 @@ function doScreenPop() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Show URL params in debug bar
-  const params = window.location.search || '(none)';
-  document.getElementById('debugParams').textContent = params;
   doScreenPop();
 
   // Listen for postMessage from Genesys Script Editor parent window
   window.addEventListener('message', (event) => {
     console.log('postMessage received:', JSON.stringify(event.data));
-    document.getElementById('debugParams').textContent =
-      (window.location.search || '(none)') + ' | msg: ' + JSON.stringify(event.data);
 
     // Try to extract AccountNumber or CustomerId from message
     const data = event.data || {};

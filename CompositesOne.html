@@ -43,10 +43,10 @@ const GC_CONFIG = loadConfig();
 </script>
 <style>
 :root {
-  --navy:      #2B2A72;
-  --navy-mid:  #3D3A8C;
-  --orange:    #9B6B9B;
-  --orange-dk: #7A4F7A;
+  --navy:      #2D2B83;
+  --navy-mid:  #3D3A9E;
+  --orange:    #7B5EA7;
+  --orange-dk: #634D8A;
   --cream:     #F4F3F8;
   --white:     #ffffff;
   --gray-100:  #eef0f3;
@@ -59,11 +59,11 @@ const GC_CONFIG = loadConfig();
   --amber-lt:  #fef3cd;
   --red:       #c0392b;
   --red-lt:    #fde8e6;
-  --blue:      #3D3A8C;
+  --blue:      #3D3A9E;
   --blue-lt:   #ECEAF8;
   --radius:    10px;
-  --shadow:    0 3px 12px rgba(43,42,114,0.10);
-  --shadow-lg: 0 8px 28px rgba(43,42,114,0.16);
+  --shadow:    0 3px 12px rgba(45,43,131,0.10);
+  --shadow-lg: 0 8px 28px rgba(45,43,131,0.16);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -95,12 +95,16 @@ body {
   gap: 12px;
 }
 .brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: var(--white);
+  text-transform: uppercase;
   line-height: 1;
+  white-space: nowrap;
 }
-.brand-logo > span { color: var(--orange); }
+.brand-logo span { color: rgba(195,158,210,1); }
 .brand-divider {
   width: 1px;
   height: 24px;
@@ -583,7 +587,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(43,42,114,0.55);
+  background: rgba(45,43,131,0.55);
   backdrop-filter: blur(3px);
   z-index: 1000;
   display: flex;
@@ -600,7 +604,7 @@ body {
 .modal-box {
   background: var(--white);
   border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(43,42,114,0.3);
+  box-shadow: 0 20px 60px rgba(45,43,131,0.3);
   width: 420px;
   max-width: 95vw;
   transform: translateY(12px) scale(0.97);
@@ -777,7 +781,7 @@ body {
 .setup-box {
   background: var(--white);
   border-radius: 16px;
-  box-shadow: 0 24px 80px rgba(43,42,114,0.5);
+  box-shadow: 0 24px 80px rgba(45,43,131,0.5);
   width: 500px;
   max-width: 95vw;
   overflow: hidden;
@@ -874,7 +878,7 @@ body {
 }
 .setup-input:focus {
   border-color: var(--orange);
-  box-shadow: 0 0 0 3px rgba(155,107,155,0.20);
+  box-shadow: 0 0 0 3px rgba(123,94,167,0.20);
 }
 .setup-input.valid {
   border-color: var(--green);
@@ -979,16 +983,7 @@ body {
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="brand-logo">
-      <svg width="46" height="36" viewBox="0 0 54 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-        <!-- Left bold C arc: ~286° sweep, flat ends, opening faces right -->
-        <!-- Arc center ≈ (19,21) radius=15; endpoints at ±37° of 3-o'clock -->
-        <path d="M 31 12 A 15 15 0 1 0 31 30" stroke="#FFFFFF" stroke-width="5.5" fill="none"/>
-        <!-- Right thinner full circle (mauve), overlapping left arc ~35% -->
-        <circle cx="37" cy="21" r="14" stroke="rgba(195,158,210,0.95)" stroke-width="3" fill="none"/>
-      </svg>
-      <span style="font-family:'Barlow',sans-serif;font-size:0.9rem;font-weight:600;letter-spacing:2px;color:#fff;text-transform:uppercase;white-space:nowrap;">COMPOSITES <span style="color:rgba(195,158,210,1);">ONE</span><sup style="font-size:0.55em;letter-spacing:0;vertical-align:super;margin-left:1px;">®</sup></span>
-    </div>
+    <div class="brand-logo">COMPOSITES <span>ONE</span><sup style="font-size:0.5em;letter-spacing:0;vertical-align:super;margin-left:2px;">®</sup></div>
     <div class="brand-divider"></div>
     <div class="brand-subtitle">Agent Script · Genesys Cloud</div>
   </div>
@@ -1042,7 +1037,7 @@ body {
         <button class="btn btn-ghost btn-sm" onclick="switchTab('workflow')">✅ Call Workflow</button>
         <button class="btn btn-danger btn-sm" onclick="escalate()">⚠ Escalate</button>
         <button class="btn btn-sm" onclick="openTransferModal()"
-                style="background:linear-gradient(135deg,#3D3A8C,#2B2A72);color:var(--white);border:1px solid rgba(155,107,155,0.4);">
+                style="background:linear-gradient(135deg,#3D3A9E,#2D2B83);color:var(--white);border:1px solid rgba(123,94,167,0.4);">
           ↔ Blind Transfer
         </button>
       </div>
@@ -1613,13 +1608,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="setup-box">
 
     <div class="setup-header">
-      <div class="setup-logo">
-        <svg width="34" height="28" viewBox="0 0 54 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;opacity:0.8;">
-          <path d="M 31 12 A 15 15 0 1 0 31 30" stroke="#FFFFFF" stroke-width="5.5" fill="none"/>
-          <circle cx="37" cy="21" r="14" stroke="rgba(195,158,210,0.95)" stroke-width="3" fill="none"/>
-        </svg>
-        COMPOSITES <span>ONE</span>
-      </div>
+      <div class="setup-logo">COMPOSITES <span>ONE</span>®</div>
       <div class="setup-title">Genesys Cloud Setup</div>
       <div class="setup-subtitle">Enter your org's configuration to enable live transfer, screen pop, and authentication.</div>
     </div>

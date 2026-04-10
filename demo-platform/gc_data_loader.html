@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GC Demo Platform — Data Loader</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1B2A4A;
+    --orange: #F47920;
+    --orange-light: #FFF3E8;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --amber: #d97706;
+    --amber-light: #fffbeb;
+    --gray-50: #f8f9fa;
+    --gray-100: #f1f3f5;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .header {
+    background: var(--navy);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 3px solid var(--orange);
+  }
+
+  .header-logo {
+    width: 36px;
+    height: 36px;
+    background: var(--orange);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .header-text h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.01em;
+  }
+
+  .header-text p {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 1px;
+  }
+
+  .main { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+  .card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--gray-200);
+  }
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-700);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--gray-900);
+    background: white;
+    transition: border-color 0.15s;
+    margin-bottom: 1rem;
+  }
+
+  input:focus { outline: none; border-color: var(--navy); }
+  input[type="password"] { font-family: 'IBM Plex Mono', monospace; }
+
+  .hint { font-size: 11px; color: var(--gray-500); margin-top: -10px; margin-bottom: 1rem; }
+
+  .table-map { display: grid; gap: 6px; }
+
+  .trow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--gray-50);
+    border-radius: 6px;
+    border: 1px solid var(--gray-200);
+    transition: background 0.15s;
+  }
+
+  .trow.active { background: white; border-color: var(--gray-300); }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  .badge-shared { background: #dbeafe; color: #1e40af; }
+  .badge-retail { background: #dcfce7; color: #166534; }
+
+  .tname { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--gray-700); flex: 1; }
+  .tcount { font-size: 11px; color: var(--gray-400); min-width: 60px; text-align: right; font-family: 'IBM Plex Mono', monospace; }
+
+  .tstatus {
+    font-size: 11px;
+    font-weight: 500;
+    min-width: 100px;
+    text-align: right;
+    color: var(--gray-400);
+  }
+
+  .tstatus.loading { color: var(--amber); }
+  .tstatus.done { color: var(--green); }
+  .tstatus.error { color: var(--red); }
+  .tstatus.partial { color: var(--amber); }
+
+  .progress-wrap { margin: 1rem 0 0; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-500); margin-bottom: 5px; }
+  .progress-bar { height: 5px; background: var(--gray-200); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--navy); border-radius: 3px; width: 0%; transition: width 0.3s; }
+  .progress-fill.done { background: var(--green); }
+  .progress-fill.error { background: var(--red); }
+
+  .actions { display: flex; gap: 10px; margin-top: 1.25rem; align-items: center; flex-wrap: wrap; }
+
+  .btn {
+    border-radius: 6px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary { background: var(--navy); color: white; border-color: var(--navy); }
+  .btn-primary:hover:not(:disabled) { background: #253a63; }
+  .btn-primary:disabled { background: var(--gray-400); border-color: var(--gray-400); cursor: not-allowed; }
+
+  .btn-secondary { background: white; color: var(--gray-700); border-color: var(--gray-300); }
+  .btn-secondary:hover:not(:disabled) { background: var(--gray-50); }
+  .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-danger { background: white; color: var(--red); border-color: #fca5a5; }
+  .btn-danger:hover:not(:disabled) { background: var(--red-light); }
+  .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-msg { font-size: 12px; color: var(--gray-500); }
+  .status-msg.success { color: var(--green); }
+  .status-msg.error { color: var(--red); }
+
+  .log-box {
+    background: var(--gray-900);
+    color: #a8d8a8;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    max-height: 280px;
+    overflow-y: auto;
+    display: none;
+    margin-top: 1rem;
+    white-space: pre-wrap;
+  }
+
+  .log-box .log-err { color: #f87171; }
+  .log-box .log-warn { color: #fbbf24; }
+  .log-box .log-ok { color: #86efac; }
+  .log-box .log-info { color: #93c5fd; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 1rem;
+    display: none;
+  }
+
+  .stat {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+
+  .stat-num { font-size: 24px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+  .stat-label { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+  .stat-num.green { color: var(--green); }
+  .stat-num.red { color: var(--red); }
+  .stat-num.amber { color: var(--amber); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">GC</div>
+  <div class="header-text">
+    <h1>GC Demo Platform — Data Loader</h1>
+    <p>Loads sample data into all 8 Genesys Cloud data tables</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-title">Connection</div>
+    <label>Genesys Cloud region base URL</label>
+    <input type="text" id="baseUrl" value="https://api.mypurecloud.com" />
+    <label>Bearer access token</label>
+    <input type="password" id="token" placeholder="Paste token from OAuth implicit grant" />
+    <p class="hint">Tip: Use the same token flow as the table creator — open the OAuth auth URL and copy the access_token from the redirect URL hash.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Table IDs</div>
+    <div id="tableIdInputs"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Load Status</div>
+    <div class="table-map" id="tableMap"></div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="progressLabel">Ready to load</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="summary-grid" id="summaryGrid">
+      <div class="stat"><div class="stat-num green" id="statLoaded">0</div><div class="stat-label">Records loaded</div></div>
+      <div class="stat"><div class="stat-num red" id="statErrors">0</div><div class="stat-label">Errors</div></div>
+      <div class="stat"><div class="stat-num amber" id="statSkipped">0</div><div class="stat-label">Skipped</div></div>
+      <div class="stat"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total records</div></div>
+    </div>
+
+    <div class="log-box" id="logBox"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="loadBtn" onclick="startLoad()">Load all data</button>
+      <button class="btn btn-danger" id="clearBtn" onclick="clearAllData()" disabled>Clear all data</button>
+      <button class="btn btn-secondary" onclick="toggleLog()">Toggle log</button>
+      <span class="status-msg" id="statusMsg"></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TABLE_DEFS = [
+  { key: "demo_config",         name: "gc_demo_jh_shared_demo_config",          scope: "shared", idField: "tid_demo_config" },
+  { key: "customers_by_phone",  name: "gc_demo_jh_shared_customers_by_phone",   scope: "shared", idField: "tid_cbp" },
+  { key: "customers",           name: "gc_demo_jh_retail_customers",            scope: "retail", idField: "tid_customers" },
+  { key: "transactions",        name: "gc_demo_jh_retail_transactions",         scope: "retail", idField: "tid_transactions" },
+  { key: "fulfillment",         name: "gc_demo_jh_retail_fulfillment",          scope: "retail", idField: "tid_fulfillment" },
+  { key: "cases",               name: "gc_demo_jh_retail_cases",               scope: "retail", idField: "tid_cases" },
+  { key: "journey_events",      name: "gc_demo_jh_retail_journey_events",       scope: "retail", idField: "tid_journey" },
+  { key: "work_item_templates", name: "gc_demo_jh_shared_work_item_templates",  scope: "shared", idField: "tid_wit" }
+];
+
+const TABLE_IDS = {
+  tid_demo_config:   "a9927325-bd86-498b-bab5-1bc24527815f",
+  tid_cbp:           "3a396340-c08c-4718-9459-b1b25057b579",
+  tid_customers:     "6b315f36-949b-4300-8a0f-288e4f9c481d",
+  tid_transactions:  "9fe351e8-f5d1-49c7-9448-014d8a7a3ed4",
+  tid_fulfillment:   "0f40a44b-0133-414f-8d7b-5462b9405514",
+  tid_cases:         "69738800-00de-492f-a557-dd927dfc9049",
+  tid_journey:       "e322d8ac-d478-4edc-9283-06fe6e6b8d18",
+  tid_wit:           "ff05f706-9431-445a-a220-54ac3fc76d2e"
+};
+
+const SAMPLE_DATA = {
+  "demo_config": [
+    { "key": "composites-one-v1", "vertical": "retail", "company_name": "Composites One", "primary_color": "#1B2A4A", "secondary_color": "#F47920", "logo_url": "https://jayhenderson66.github.io/AgentScript1/assets/compositesone_logo.png", "customer_noun": "Account", "transaction_noun": "Order", "support_phone": "(800) 621-8003", "ava_name": "AVA", "enabled_channels": "voice,digital,sms,email,outbound,workitem,case", "enabled_ai": "ava,copilot,supervisor,predictive", "talk_track_url": "", "demo_version": "1.0" }
+  ],
+  "customers_by_phone": [
+    { "key": "9492955945", "caller_phone": "(949) 295-5945", "customer_id": "C1001", "account_number": "ACCT-C1001", "demo_config_key": "composites-one-v1" },
+    { "key": "7145550182", "caller_phone": "(714) 555-0182", "customer_id": "C1002", "account_number": "ACCT-C1002", "demo_config_key": "composites-one-v1" },
+    { "key": "9495550247", "caller_phone": "(949) 555-0247", "customer_id": "C1003", "account_number": "ACCT-C1003", "demo_config_key": "composites-one-v1" },
+    { "key": "6265550391", "caller_phone": "(626) 555-0391", "customer_id": "C1004", "account_number": "ACCT-C1004", "demo_config_key": "composites-one-v1" },
+    { "key": "8585550412", "caller_phone": "(858) 555-0412", "customer_id": "C1005", "account_number": "ACCT-C1005", "demo_config_key": "composites-one-v1" },
+    { "key": "3105550538", "caller_phone": "(310) 555-0538", "customer_id": "C1006", "account_number": "ACCT-C1006", "demo_config_key": "composites-one-v1" },
+    { "key": "7605550614", "caller_phone": "(760) 555-0614", "customer_id": "C1007", "account_number": "ACCT-C1007", "demo_config_key": "composites-one-v1" },
+    { "key": "9095550729", "caller_phone": "(909) 555-0729", "customer_id": "C1008", "account_number": "ACCT-C1008", "demo_config_key": "composites-one-v1" },
+    { "key": "8185550847", "caller_phone": "(818) 555-0847", "customer_id": "C1009", "account_number": "ACCT-C1009", "demo_config_key": "composites-one-v1" },
+    { "key": "5625550963", "caller_phone": "(562) 555-0963", "customer_id": "C1010", "account_number": "ACCT-C1010", "demo_config_key": "composites-one-v1" }
+  ],
+  "customers": [
+    { "key": "C1001", "account_number": "ACCT-C1001", "first_name": "Philip", "last_name": "Rivers", "company_name": "Pacific Aerospace Fabricators", "phone": "(949) 295-5945", "phone_normalized": "9492955945", "email": "philip.rivers1210@gmail.com", "address": "4515 Cherry Lane", "city_state_zip": "Dana Point, CA 92629", "account_type": "Premium", "journey_stage": "issue", "sentiment_score": "negative", "nps_score": "4", "lifetime_value": "$284,500", "open_case_id": "CASE-2026-0042", "preferred_channel": "voice", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1002", "account_number": "ACCT-C1002", "first_name": "Sandra", "last_name": "Ortega", "company_name": "Coastal Marine Composites", "phone": "(714) 555-0182", "phone_normalized": "7145550182", "email": "s.ortega@coastalmarine.com", "address": "2200 Harbor Blvd", "city_state_zip": "Costa Mesa, CA 92627", "account_type": "Standard", "journey_stage": "active", "sentiment_score": "positive", "nps_score": "9", "lifetime_value": "$97,200", "open_case_id": "", "preferred_channel": "email", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1003", "account_number": "ACCT-C1003", "first_name": "Marcus", "last_name": "Webb", "company_name": "Webb Industrial Solutions", "phone": "(949) 555-0247", "phone_normalized": "9495550247", "email": "mwebb@webbindustrial.com", "address": "875 Production Way", "city_state_zip": "Irvine, CA 92618", "account_type": "Premium", "journey_stage": "onboarding", "sentiment_score": "neutral", "nps_score": "7", "lifetime_value": "$42,800", "open_case_id": "CASE-2026-0055", "preferred_channel": "voice", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1004", "account_number": "ACCT-C1004", "first_name": "Diane", "last_name": "Calloway", "company_name": "Calloway Drone Systems", "phone": "(626) 555-0391", "phone_normalized": "6265550391", "email": "diane.calloway@callowaydrone.com", "address": "1140 Innovation Drive", "city_state_zip": "Pasadena, CA 91107", "account_type": "Standard", "journey_stage": "acquisition", "sentiment_score": "positive", "nps_score": "", "lifetime_value": "$0", "open_case_id": "", "preferred_channel": "digital", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1005", "account_number": "ACCT-C1005", "first_name": "Trevor", "last_name": "Nakamura", "company_name": "Nakamura Performance Parts", "phone": "(858) 555-0412", "phone_normalized": "8585550412", "email": "t.nakamura@nakamuraparts.com", "address": "330 Sorrento Valley Rd", "city_state_zip": "San Diego, CA 92121", "account_type": "Standard", "journey_stage": "onboarding", "sentiment_score": "positive", "nps_score": "8", "lifetime_value": "$12,400", "open_case_id": "CASE-2026-0061", "preferred_channel": "sms", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1006", "account_number": "ACCT-C1006", "first_name": "Renee", "last_name": "Ashford", "company_name": "Ashford Sporting Goods", "phone": "(310) 555-0538", "phone_normalized": "3105550538", "email": "renee@ashfordsports.com", "address": "5800 W Century Blvd", "city_state_zip": "Los Angeles, CA 90045", "account_type": "Premium", "journey_stage": "active", "sentiment_score": "positive", "nps_score": "10", "lifetime_value": "$431,200", "open_case_id": "", "preferred_channel": "voice", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1007", "account_number": "ACCT-C1007", "first_name": "Bobby", "last_name": "Tran", "company_name": "Tran Fabrication Group", "phone": "(760) 555-0614", "phone_normalized": "7605550614", "email": "btran@tranfab.com", "address": "220 Eucalyptus Ave", "city_state_zip": "Escondido, CA 92025", "account_type": "Standard", "journey_stage": "issue", "sentiment_score": "neutral", "nps_score": "6", "lifetime_value": "$58,300", "open_case_id": "CASE-2026-0067", "preferred_channel": "voice", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1008", "account_number": "ACCT-C1008", "first_name": "Alicia", "last_name": "Monroe", "company_name": "Monroe Composite Studios", "phone": "(909) 555-0729", "phone_normalized": "9095550729", "email": "alicia.monroe@monroestudios.com", "address": "740 Mill St", "city_state_zip": "San Bernardino, CA 92408", "account_type": "Standard", "journey_stage": "issue", "sentiment_score": "negative", "nps_score": "3", "lifetime_value": "$29,700", "open_case_id": "CASE-2026-0071", "preferred_channel": "email", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1009", "account_number": "ACCT-C1009", "first_name": "Derek", "last_name": "Simmons", "company_name": "Simmons Aero Components", "phone": "(818) 555-0847", "phone_normalized": "8185550847", "email": "derek.simmons@simmonsaero.com", "address": "9200 Oakdale Ave", "city_state_zip": "Chatsworth, CA 91311", "account_type": "Premium", "journey_stage": "resolution", "sentiment_score": "neutral", "nps_score": "7", "lifetime_value": "$176,400", "open_case_id": "", "preferred_channel": "voice", "language": "en-us", "demo_config_key": "composites-one-v1" },
+    { "key": "C1010", "account_number": "ACCT-C1010", "first_name": "Lisa", "last_name": "Fontaine", "company_name": "Fontaine Advanced Materials", "phone": "(562) 555-0963", "phone_normalized": "5625550963", "email": "lfontaine@fontaineam.com", "address": "3300 E Spring St", "city_state_zip": "Long Beach, CA 90806", "account_type": "Premium", "journey_stage": "retention", "sentiment_score": "at-risk", "nps_score": "5", "lifetime_value": "$312,800", "open_case_id": "", "preferred_channel": "voice", "language": "en-us", "demo_config_key": "composites-one-v1" }
+  ],
+  "transactions": [
+    { "key": "TXN001", "customer_id": "C1001", "transaction_type": "order", "reference_number": "PO-2026-8841", "transaction_date": "2026-03-18", "status": "delayed", "status_display": "Delayed — Weather Hold", "amount": "$18,450.00", "description": "Carbon fiber prepreg sheets — 3K plain weave, 48in roll, qty 200", "total_items": "3", "completed_items": "1", "pending_items": "2", "estimated_completion": "2026-04-14", "actual_completion": "", "on_hold_reason": "", "delay_reason": "Severe weather delay at Memphis distribution hub — FedEx Freight hold since 4/3", "assigned_to": "Logistics Team", "destination": "Dana Point, CA", "notes": "Customer called 4/7 — frustrated, requested escalation. Case opened.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN002", "customer_id": "C1001", "transaction_type": "order", "reference_number": "PO-2026-7712", "transaction_date": "2026-02-28", "status": "delivered", "status_display": "Delivered", "amount": "$6,220.00", "description": "Epoxy resin system — MGS L285 with hardener, 10kg units, qty 12", "total_items": "1", "completed_items": "1", "pending_items": "0", "estimated_completion": "2026-03-07", "actual_completion": "2026-03-06", "on_hold_reason": "", "delay_reason": "", "assigned_to": "", "destination": "Dana Point, CA", "notes": "", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN003", "customer_id": "C1001", "transaction_type": "order", "reference_number": "PO-2026-9103", "transaction_date": "2026-04-02", "status": "on-hold", "status_display": "On Hold — Credit Review", "amount": "$31,780.00", "description": "Tooling materials — vacuum bagging film, release fabric, peel ply, qty assorted", "total_items": "6", "completed_items": "0", "pending_items": "6", "estimated_completion": "2026-04-20", "actual_completion": "", "on_hold_reason": "Account flagged for credit limit review — AR approval required before release", "delay_reason": "", "assigned_to": "AR Team", "destination": "Dana Point, CA", "notes": "Hold triggered automatically. Customer not yet notified.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN004", "customer_id": "C1002", "transaction_type": "order", "reference_number": "PO-2026-8203", "transaction_date": "2026-03-25", "status": "in-transit", "status_display": "In Transit", "amount": "$9,340.00", "description": "Fiberglass woven roving — 24oz, 50in width, qty 50 yards", "total_items": "2", "completed_items": "0", "pending_items": "2", "estimated_completion": "2026-04-11", "actual_completion": "", "on_hold_reason": "", "delay_reason": "", "assigned_to": "", "destination": "Costa Mesa, CA", "notes": "", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN005", "customer_id": "C1003", "transaction_type": "order", "reference_number": "PO-2026-9201", "transaction_date": "2026-04-05", "status": "processing", "status_display": "Processing", "amount": "$14,600.00", "description": "First order — carbon fiber fabric and epoxy starter kit per sales agreement", "total_items": "4", "completed_items": "0", "pending_items": "4", "estimated_completion": "2026-04-18", "actual_completion": "", "on_hold_reason": "", "delay_reason": "", "assigned_to": "Onboarding Team", "destination": "Irvine, CA", "notes": "New account — onboarding case open. Sales rep: Jamie Tran.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN006", "customer_id": "C1005", "transaction_type": "order", "reference_number": "PO-2026-9288", "transaction_date": "2026-04-06", "status": "processing", "status_display": "Processing", "amount": "$8,750.00", "description": "Carbon fiber tube stock and adhesive — initial setup order", "total_items": "3", "completed_items": "0", "pending_items": "3", "estimated_completion": "2026-04-17", "actual_completion": "", "on_hold_reason": "", "delay_reason": "", "assigned_to": "Onboarding Team", "destination": "San Diego, CA", "notes": "New account welcome order.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN007", "customer_id": "C1006", "transaction_type": "order", "reference_number": "PO-2026-8105", "transaction_date": "2026-03-10", "status": "delivered", "status_display": "Delivered", "amount": "$52,300.00", "description": "High-modulus carbon fiber — aerospace grade, bulk order Q1 2026", "total_items": "5", "completed_items": "5", "pending_items": "0", "estimated_completion": "2026-03-20", "actual_completion": "2026-03-19", "on_hold_reason": "", "delay_reason": "", "assigned_to": "", "destination": "Los Angeles, CA", "notes": "Repeat order — 14th consecutive on-time delivery.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN008", "customer_id": "C1007", "transaction_type": "order", "reference_number": "PO-2026-9044", "transaction_date": "2026-03-30", "status": "on-hold", "status_display": "On Hold — Credit Review", "amount": "$22,100.00", "description": "Structural foam core panels — Divinycell H80, various sizes", "total_items": "4", "completed_items": "0", "pending_items": "4", "estimated_completion": "2026-04-15", "actual_completion": "", "on_hold_reason": "Credit limit exceeded — account balance $18,400 past due 45 days", "delay_reason": "", "assigned_to": "AR Team", "destination": "Escondido, CA", "notes": "Customer not yet notified of hold. AR review in progress.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN009", "customer_id": "C1008", "transaction_type": "order", "reference_number": "PO-2026-7890", "transaction_date": "2026-03-05", "status": "exception", "status_display": "Exception — Defective Product", "amount": "$11,250.00", "description": "Prepreg carbon fiber — T700 unidirectional tape, qty 150", "total_items": "2", "completed_items": "2", "pending_items": "0", "estimated_completion": "2026-03-14", "actual_completion": "2026-03-13", "on_hold_reason": "", "delay_reason": "", "assigned_to": "Customer Service", "destination": "San Bernardino, CA", "notes": "Customer reported delamination defects on 40% of received material. Refund case opened.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN010", "customer_id": "C1009", "transaction_type": "order", "reference_number": "PO-2026-8560", "transaction_date": "2026-03-15", "status": "delivered", "status_display": "Delivered", "amount": "$27,600.00", "description": "Carbon fiber prepreg and tooling consumables — Q2 restock", "total_items": "4", "completed_items": "4", "pending_items": "0", "estimated_completion": "2026-03-25", "actual_completion": "2026-03-24", "on_hold_reason": "", "delay_reason": "", "assigned_to": "", "destination": "Chatsworth, CA", "notes": "Case CASE-2026-0038 resolved and closed 4/8. NPS survey sent.", "demo_config_key": "composites-one-v1" },
+    { "key": "TXN011", "customer_id": "C1010", "transaction_type": "order", "reference_number": "PO-2026-7401", "transaction_date": "2026-02-14", "status": "delivered", "status_display": "Delivered", "amount": "$44,900.00", "description": "Annual materials contract — Q1 bulk delivery", "total_items": "6", "completed_items": "6", "pending_items": "0", "estimated_completion": "2026-02-25", "actual_completion": "2026-02-27", "on_hold_reason": "", "delay_reason": "Minor 2-day delay — truck reroute due to highway closure", "assigned_to": "", "destination": "Long Beach, CA", "notes": "Customer expressed dissatisfaction with delay. NPS dropped from 8 to 5. No follow-up completed.", "demo_config_key": "composites-one-v1" }
+  ],
+  "fulfillment": [
+    { "key": "FUL001", "transaction_id": "TXN001", "status": "Delayed", "carrier_or_provider": "FedEx Freight", "tracking_reference": "774899341285", "tracking_url": "https://www.fedex.com/fedextrack/?trknbr=774899341285", "start_date": "2026-03-21", "estimated_date": "2026-04-14", "actual_date": "", "exception": "Weather delay — Memphis hub. No updated ETA from carrier.", "last_event": "Shipment delayed due to severe weather conditions at Memphis, TN facility", "last_event_date": "2026-04-03", "signed_by": "", "destination": "4515 Cherry Lane, Dana Point, CA 92629", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL002", "transaction_id": "TXN002", "status": "Delivered", "carrier_or_provider": "UPS Ground", "tracking_reference": "1Z999AA10123456784", "tracking_url": "https://www.ups.com/track?tracknum=1Z999AA10123456784", "start_date": "2026-03-01", "estimated_date": "2026-03-07", "actual_date": "2026-03-06", "exception": "", "last_event": "Delivered — received by P. RIVERS", "last_event_date": "2026-03-06", "signed_by": "P. RIVERS", "destination": "4515 Cherry Lane, Dana Point, CA 92629", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL003", "transaction_id": "TXN003", "status": "On Hold", "carrier_or_provider": "", "tracking_reference": "", "tracking_url": "", "start_date": "", "estimated_date": "2026-04-20", "actual_date": "", "exception": "Order held pending AR credit approval. Not yet released to warehouse.", "last_event": "Order placed in credit hold queue — AR review required", "last_event_date": "2026-04-02", "signed_by": "", "destination": "4515 Cherry Lane, Dana Point, CA 92629", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL004", "transaction_id": "TXN004", "status": "In Transit", "carrier_or_provider": "Old Dominion Freight", "tracking_reference": "OD-3847291056", "tracking_url": "", "start_date": "2026-03-27", "estimated_date": "2026-04-11", "actual_date": "", "exception": "", "last_event": "In transit — departed Phoenix, AZ distribution center", "last_event_date": "2026-04-08", "signed_by": "", "destination": "2200 Harbor Blvd, Costa Mesa, CA 92627", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL005", "transaction_id": "TXN005", "status": "Preparing", "carrier_or_provider": "FedEx Freight", "tracking_reference": "", "tracking_url": "", "start_date": "", "estimated_date": "2026-04-18", "actual_date": "", "exception": "", "last_event": "Order received — warehouse pick list generated", "last_event_date": "2026-04-05", "signed_by": "", "destination": "875 Production Way, Irvine, CA 92618", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL006", "transaction_id": "TXN006", "status": "Preparing", "carrier_or_provider": "UPS Freight", "tracking_reference": "", "tracking_url": "", "start_date": "", "estimated_date": "2026-04-17", "actual_date": "", "exception": "", "last_event": "Order confirmed — awaiting warehouse release", "last_event_date": "2026-04-06", "signed_by": "", "destination": "330 Sorrento Valley Rd, San Diego, CA 92121", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL007", "transaction_id": "TXN007", "status": "Delivered", "carrier_or_provider": "FedEx Freight", "tracking_reference": "774812930047", "tracking_url": "https://www.fedex.com/fedextrack/?trknbr=774812930047", "start_date": "2026-03-11", "estimated_date": "2026-03-20", "actual_date": "2026-03-19", "exception": "", "last_event": "Delivered — received by R. ASHFORD", "last_event_date": "2026-03-19", "signed_by": "R. ASHFORD", "destination": "5800 W Century Blvd, Los Angeles, CA 90045", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL008", "transaction_id": "TXN008", "status": "On Hold", "carrier_or_provider": "", "tracking_reference": "", "tracking_url": "", "start_date": "", "estimated_date": "2026-04-15", "actual_date": "", "exception": "Credit hold — order not released to warehouse pending AR approval", "last_event": "Order flagged for credit review — processing suspended", "last_event_date": "2026-03-30", "signed_by": "", "destination": "220 Eucalyptus Ave, Escondido, CA 92025", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL009", "transaction_id": "TXN009", "status": "Delivered", "carrier_or_provider": "UPS Ground", "tracking_reference": "1Z999BB20234567891", "tracking_url": "https://www.ups.com/track?tracknum=1Z999BB20234567891", "start_date": "2026-03-06", "estimated_date": "2026-03-14", "actual_date": "2026-03-13", "exception": "Customer reported defective material upon receipt — delamination on 40% of units", "last_event": "Delivered — defect claim filed by customer 3/20", "last_event_date": "2026-03-20", "signed_by": "A. MONROE", "destination": "740 Mill St, San Bernardino, CA 92408", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL010", "transaction_id": "TXN010", "status": "Delivered", "carrier_or_provider": "Old Dominion Freight", "tracking_reference": "OD-2938471022", "tracking_url": "", "start_date": "2026-03-16", "estimated_date": "2026-03-25", "actual_date": "2026-03-24", "exception": "", "last_event": "Delivered — received by D. SIMMONS", "last_event_date": "2026-03-24", "signed_by": "D. SIMMONS", "destination": "9200 Oakdale Ave, Chatsworth, CA 91311", "demo_config_key": "composites-one-v1" },
+    { "key": "FUL011", "transaction_id": "TXN011", "status": "Delivered", "carrier_or_provider": "FedEx Freight", "tracking_reference": "774700221934", "tracking_url": "https://www.fedex.com/fedextrack/?trknbr=774700221934", "start_date": "2026-02-15", "estimated_date": "2026-02-25", "actual_date": "2026-02-27", "exception": "2-day delay — truck rerouted due to I-10 highway closure near Blythe, CA", "last_event": "Delivered — received by L. FONTAINE", "last_event_date": "2026-02-27", "signed_by": "L. FONTAINE", "destination": "3300 E Spring St, Long Beach, CA 90806", "demo_config_key": "composites-one-v1" }
+  ],
+  "cases": [
+    { "key": "CASE-2026-0042", "customer_id": "C1001", "case_type": "exception", "case_title": "PO-2026-8841 — Shipment Delayed 11 Days, Customer Escalating", "status": "stage-2", "current_stage": "2", "stage_1_owner": "Customer Service", "stage_1_status": "complete", "stage_2_owner": "Logistics & Operations", "stage_2_status": "in-progress", "stage_3_owner": "Customer Service", "stage_3_status": "pending", "priority": "high", "sla_hours": "48", "opened_date": "2026-04-07", "due_date": "2026-04-09", "resolution": "", "linked_transaction_id": "TXN001", "linked_conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "CASE-2026-0055", "customer_id": "C1003", "case_type": "onboarding", "case_title": "New Account Onboarding — Webb Industrial Solutions", "status": "stage-1", "current_stage": "1", "stage_1_owner": "Onboarding Team", "stage_1_status": "in-progress", "stage_2_owner": "Customer Success", "stage_2_status": "pending", "stage_3_owner": "Sales", "stage_3_status": "pending", "priority": "medium", "sla_hours": "72", "opened_date": "2026-04-05", "due_date": "2026-04-08", "resolution": "", "linked_transaction_id": "TXN005", "linked_conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "CASE-2026-0061", "customer_id": "C1005", "case_type": "onboarding", "case_title": "New Account Onboarding — Nakamura Performance Parts", "status": "stage-1", "current_stage": "1", "stage_1_owner": "Onboarding Team", "stage_1_status": "in-progress", "stage_2_owner": "Customer Success", "stage_2_status": "pending", "stage_3_owner": "Sales", "stage_3_status": "pending", "priority": "medium", "sla_hours": "72", "opened_date": "2026-04-06", "due_date": "2026-04-09", "resolution": "", "linked_transaction_id": "TXN006", "linked_conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "CASE-2026-0067", "customer_id": "C1007", "case_type": "exception", "case_title": "PO-2026-9044 — Credit Hold, Customer Unaware", "status": "stage-1", "current_stage": "1", "stage_1_owner": "AR Team", "stage_1_status": "in-progress", "stage_2_owner": "Customer Service", "stage_2_status": "pending", "stage_3_owner": "", "stage_3_status": "", "priority": "medium", "sla_hours": "24", "opened_date": "2026-03-30", "due_date": "2026-03-31", "resolution": "", "linked_transaction_id": "TXN008", "linked_conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "CASE-2026-0071", "customer_id": "C1008", "case_type": "refund", "case_title": "PO-2026-7890 — Defective Material, Refund Requested", "status": "stage-2", "current_stage": "2", "stage_1_owner": "Customer Service", "stage_1_status": "complete", "stage_2_owner": "Quality & Returns", "stage_2_status": "in-progress", "stage_3_owner": "Customer Service", "stage_3_status": "pending", "priority": "high", "sla_hours": "48", "opened_date": "2026-03-20", "due_date": "2026-03-22", "resolution": "", "linked_transaction_id": "TXN009", "linked_conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "CASE-2026-0038", "customer_id": "C1009", "case_type": "exception", "case_title": "PO-2026-8560 — Partial Shipment Discrepancy, Resolved", "status": "closed", "current_stage": "3", "stage_1_owner": "Customer Service", "stage_1_status": "complete", "stage_2_owner": "Logistics & Operations", "stage_2_status": "complete", "stage_3_owner": "Customer Service", "stage_3_status": "complete", "priority": "medium", "sla_hours": "48", "opened_date": "2026-03-25", "due_date": "2026-03-27", "resolution": "Missing line item located at warehouse and reshipped via expedited freight. Delivered 4/2. Customer confirmed receipt. $250 credit applied to account.", "linked_transaction_id": "TXN010", "linked_conversation_id": "", "demo_config_key": "composites-one-v1" }
+  ],
+  "journey_events": [
+    { "key": "EVT001", "customer_id": "C1001", "event_date": "2026-04-07T09:14:00", "channel": "voice", "direction": "inbound", "event_type": "Call", "summary": "Philip called to report PO-2026-8841 is 7 days overdue. Frustrated — production line impacted. Escalated to supervisor. Case CASE-2026-0042 opened.", "outcome": "escalated", "agent_name": "Maria Chen", "queue_name": "Order Management", "duration_seconds": "487", "sentiment": "negative", "linked_case_id": "CASE-2026-0042", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT002", "customer_id": "C1001", "event_date": "2026-04-07T09:45:00", "channel": "sms", "direction": "outbound", "event_type": "SMS", "summary": "Automated SMS sent to Philip confirming case CASE-2026-0042 opened. Case ID provided for reference.", "outcome": "resolved", "agent_name": "", "queue_name": "", "duration_seconds": "", "sentiment": "neutral", "linked_case_id": "CASE-2026-0042", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT003", "customer_id": "C1001", "event_date": "2026-04-03T11:20:00", "channel": "email", "direction": "outbound", "event_type": "Email", "summary": "Proactive email sent notifying Philip of weather delay on PO-2026-8841. Revised ETA of 4/14 provided.", "outcome": "resolved", "agent_name": "", "queue_name": "", "duration_seconds": "", "sentiment": "neutral", "linked_case_id": "", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT004", "customer_id": "C1001", "event_date": "2026-03-18T14:05:00", "channel": "digital", "direction": "inbound", "event_type": "Chat", "summary": "Philip chatted to confirm PO-2026-8841 receipt and expected ship date. AVA handled fully — no agent transfer.", "outcome": "resolved", "agent_name": "", "queue_name": "", "duration_seconds": "143", "sentiment": "positive", "linked_case_id": "", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT005", "customer_id": "C1001", "event_date": "2026-02-28T10:30:00", "channel": "voice", "direction": "inbound", "event_type": "Call", "summary": "Philip placed order PO-2026-7712 for epoxy resin. Standard order call — completed with no issues.", "outcome": "resolved", "agent_name": "James Park", "queue_name": "Order Management", "duration_seconds": "312", "sentiment": "positive", "linked_case_id": "", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT006", "customer_id": "C1001", "event_date": "2026-04-08T08:00:00", "channel": "work-item", "direction": "internal", "event_type": "Work Item", "summary": "Stage 2 work item created for Logistics — investigate FedEx hold on PO-2026-8841 and determine reship or expedite options.", "outcome": "pending", "agent_name": "Logistics Team", "queue_name": "Logistics & Operations", "duration_seconds": "", "sentiment": "neutral", "linked_case_id": "CASE-2026-0042", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT007", "customer_id": "C1008", "event_date": "2026-03-20T13:45:00", "channel": "voice", "direction": "inbound", "event_type": "Call", "summary": "Alicia called to report defective material on PO-2026-7890. Delamination on 40% of received prepreg. Requested full refund. Case CASE-2026-0071 opened.", "outcome": "escalated", "agent_name": "David Reyes", "queue_name": "Customer Service", "duration_seconds": "623", "sentiment": "negative", "linked_case_id": "CASE-2026-0071", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT008", "customer_id": "C1009", "event_date": "2026-04-08T10:00:00", "channel": "sms", "direction": "outbound", "event_type": "SMS", "summary": "NPS survey sent to Derek following closure of CASE-2026-0038. Survey link included.", "outcome": "resolved", "agent_name": "", "queue_name": "", "duration_seconds": "", "sentiment": "neutral", "linked_case_id": "CASE-2026-0038", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT009", "customer_id": "C1010", "event_date": "2026-04-05T09:00:00", "channel": "outbound", "direction": "outbound", "event_type": "Call", "summary": "Outbound win-back call attempt to Lisa — no answer. Voicemail left offering dedicated account rep and 5% loyalty discount on next order.", "outcome": "abandoned", "agent_name": "Sarah Kim", "queue_name": "Retention", "duration_seconds": "42", "sentiment": "neutral", "linked_case_id": "", "conversation_id": "", "demo_config_key": "composites-one-v1" },
+    { "key": "EVT010", "customer_id": "C1010", "event_date": "2026-02-27T16:30:00", "channel": "voice", "direction": "inbound", "event_type": "Call", "summary": "Lisa called to express frustration with 2-day delay on PO-2026-7401. Stated she is evaluating alternative suppliers. Agent noted at-risk flag.", "outcome": "resolved", "agent_name": "Maria Chen", "queue_name": "Customer Service", "duration_seconds": "398", "sentiment": "negative", "linked_case_id": "", "conversation_id": "", "demo_config_key": "composites-one-v1" }
+  ],
+  "work_item_templates": [
+    { "key": "WI-EXCEPTION-CASE", "demo_config_key": "composites-one-v1", "workitem_type": "Transaction Exception", "display_name": "Order / Shipment Exception", "default_queue": "Order Management", "default_priority": "high", "default_sla_hours": "48", "trigger_event": "escalation", "stage_count": "3", "stage_1_queue": "Order Management", "stage_2_queue": "Logistics & Operations", "stage_3_queue": "Customer Service", "custom_attributes": "order_number|carrier|exception_type|resolution_action", "vertical": "retail" },
+    { "key": "WI-CREDIT-HOLD", "demo_config_key": "composites-one-v1", "workitem_type": "Credit Hold Review", "display_name": "Credit Hold / AR Review", "default_queue": "AR Team", "default_priority": "medium", "default_sla_hours": "24", "trigger_event": "hold", "stage_count": "2", "stage_1_queue": "AR Team", "stage_2_queue": "Customer Service", "stage_3_queue": "", "custom_attributes": "order_number|hold_reason|credit_limit|approval_status", "vertical": "retail" },
+    { "key": "WI-ONBOARDING", "demo_config_key": "composites-one-v1", "workitem_type": "New Account Onboarding", "display_name": "New Customer Onboarding", "default_queue": "Onboarding Team", "default_priority": "medium", "default_sla_hours": "72", "trigger_event": "signup", "stage_count": "3", "stage_1_queue": "Onboarding Team", "stage_2_queue": "Customer Success", "stage_3_queue": "Sales", "custom_attributes": "account_type|sales_rep|first_order_id|orientation_scheduled", "vertical": "retail" },
+    { "key": "WI-REFUND", "demo_config_key": "composites-one-v1", "workitem_type": "Refund / Return", "display_name": "Refund or Return Request", "default_queue": "Customer Service", "default_priority": "high", "default_sla_hours": "48", "trigger_event": "exception", "stage_count": "3", "stage_1_queue": "Customer Service", "stage_2_queue": "Quality & Returns", "stage_3_queue": "Customer Service", "custom_attributes": "order_number|defect_description|refund_amount|return_label_sent", "vertical": "retail" },
+    { "key": "WI-RETENTION", "demo_config_key": "composites-one-v1", "workitem_type": "At-Risk Retention", "display_name": "At-Risk Customer Outreach", "default_queue": "Retention", "default_priority": "high", "default_sla_hours": "24", "trigger_event": "escalation", "stage_count": "2", "stage_1_queue": "Retention", "stage_2_queue": "Account Management", "stage_3_queue": "", "custom_attributes": "nps_score|at_risk_reason|offer_made|outcome", "vertical": "retail" }
+  ]
+};
+
+let totalLoaded = 0, totalErrors = 0, totalSkipped = 0;
+let logVisible = false;
+
+function getBase() { return document.getElementById('baseUrl').value.trim().replace(/\/$/, ''); }
+function getToken() { return document.getElementById('token').value.trim(); }
+function getTableId(field) { return document.getElementById(field).value.trim(); }
+
+function renderTableIdInputs() {
+  const wrap = document.getElementById('tableIdInputs');
+  wrap.innerHTML = TABLE_DEFS.map(t => `
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+      <span class="badge badge-${t.scope}" style="min-width:52px; text-align:center;">${t.scope}</span>
+      <label style="margin:0; flex:1; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gray-600);">${t.name}</label>
+      <input type="text" id="${t.idField}" value="${TABLE_IDS[t.idField]}" style="width:320px; margin:0; font-family:'IBM Plex Mono',monospace; font-size:12px;" />
+    </div>
+  `).join('');
+}
+
+function renderTableMap() {
+  const map = document.getElementById('tableMap');
+  const counts = {};
+  TABLE_DEFS.forEach(t => { counts[t.key] = (SAMPLE_DATA[t.key] || []).length; });
+  map.innerHTML = TABLE_DEFS.map((t, i) => `
+    <div class="trow" id="trow-${i}">
+      <span class="badge badge-${t.scope}">${t.scope}</span>
+      <div class="tname">${t.name}</div>
+      <span class="tcount">${counts[t.key]} record${counts[t.key] !== 1 ? 's' : ''}</span>
+      <span class="tstatus" id="tstat-${i}">—</span>
+    </div>
+  `).join('');
+}
+
+function setTableStatus(i, text, cls) {
+  const el = document.getElementById(`tstat-${i}`);
+  el.textContent = text;
+  el.className = `tstatus ${cls}`;
+}
+
+function log(msg, type='') {
+  const box = document.getElementById('logBox');
+  const line = document.createElement('span');
+  line.className = type ? `log-${type}` : '';
+  line.textContent = msg + '\n';
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+function toggleLog() {
+  const box = document.getElementById('logBox');
+  logVisible = !logVisible;
+  box.style.display = logVisible ? 'block' : 'none';
+}
+
+function updateProgress(done, total) {
+  const pct = Math.round((done / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressLabel').textContent = `Loading records... ${done} / ${total}`;
+}
+
+function updateStats() {
+  document.getElementById('statLoaded').textContent = totalLoaded;
+  document.getElementById('statErrors').textContent = totalErrors;
+  document.getElementById('statSkipped').textContent = totalSkipped;
+}
+
+async function loadRecord(baseUrl, token, tableId, record) {
+  const res = await fetch(`${baseUrl}/api/v2/datatables/${tableId}/rows`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(record)
+  });
+  if (res.status === 409) return 'skip';
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return 'ok';
+}
+
+async function startLoad() {
+  const baseUrl = getBase();
+  const token = getToken();
+  if (!baseUrl || !token) {
+    document.getElementById('statusMsg').textContent = 'Please enter base URL and token.';
+    document.getElementById('statusMsg').className = 'status-msg error';
+    return;
+  }
+
+  totalLoaded = 0; totalErrors = 0; totalSkipped = 0;
+  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('logBox').style.display = logVisible ? 'block' : 'none';
+  document.getElementById('summaryGrid').style.display = 'grid';
+
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  document.getElementById('clearBtn').disabled = true;
+  document.getElementById('statusMsg').textContent = '';
+
+  const totalRecords = TABLE_DEFS.reduce((sum, t) => sum + (SAMPLE_DATA[t.key] || []).length, 0);
+  document.getElementById('statTotal').textContent = totalRecords;
+  let done = 0;
+
+  for (let i = 0; i < TABLE_DEFS.length; i++) {
+    const t = TABLE_DEFS[i];
+    const tableId = getTableId(t.idField);
+    const records = SAMPLE_DATA[t.key] || [];
+
+    if (!tableId) {
+      setTableStatus(i, 'no ID', 'error');
+      log(`[SKIP] ${t.name} — no table ID provided`, 'warn');
+      continue;
+    }
+
+    setTableStatus(i, 'loading...', 'loading');
+    log(`[TABLE] ${t.name} (${records.length} records)`, 'info');
+
+    let tableLoaded = 0, tableErrors = 0, tableSkipped = 0;
+
+    for (const record of records) {
+      try {
+        const result = await loadRecord(baseUrl, token, tableId, record);
+        if (result === 'skip') {
+          tableSkipped++; totalSkipped++;
+          log(`  [SKIP] ${record.key} — already exists (409)`, 'warn');
+        } else {
+          tableLoaded++; totalLoaded++;
+          log(`  [OK]   ${record.key}`, 'ok');
+        }
+      } catch(e) {
+        tableErrors++; totalErrors++;
+        log(`  [ERR]  ${record.key} — ${e.message}`, 'err');
+      }
+      done++;
+      updateProgress(done, totalRecords);
+      updateStats();
+    }
+
+    if (tableErrors > 0 && tableLoaded === 0) {
+      setTableStatus(i, `${tableErrors} errors`, 'error');
+    } else if (tableSkipped > 0 && tableLoaded === 0) {
+      setTableStatus(i, `${tableSkipped} skipped`, 'partial');
+    } else if (tableErrors > 0) {
+      setTableStatus(i, `${tableLoaded} ok, ${tableErrors} err`, 'partial');
+    } else if (tableSkipped > 0) {
+      setTableStatus(i, `${tableLoaded} loaded, ${tableSkipped} skip`, 'done');
+    } else {
+      setTableStatus(i, `${tableLoaded} loaded`, 'done');
+    }
+  }
+
+  const fill = document.getElementById('progressFill');
+  fill.classList.toggle('done', totalErrors === 0);
+  fill.classList.toggle('error', totalErrors > 0 && totalLoaded === 0);
+
+  const msg = document.getElementById('statusMsg');
+  if (totalErrors === 0 && totalSkipped === 0) {
+    msg.textContent = `All ${totalLoaded} records loaded successfully.`;
+    msg.className = 'status-msg success';
+    document.getElementById('progressLabel').textContent = 'Load complete';
+  } else if (totalLoaded > 0) {
+    msg.textContent = `Done — ${totalLoaded} loaded, ${totalSkipped} skipped, ${totalErrors} errors.`;
+    msg.className = 'status-msg';
+    document.getElementById('progressLabel').textContent = 'Load complete with warnings';
+  } else {
+    msg.textContent = `Load failed — check errors in log.`;
+    msg.className = 'status-msg error';
+    document.getElementById('progressLabel').textContent = 'Load failed';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Load all data';
+  document.getElementById('clearBtn').disabled = false;
+}
+
+async function clearAllData() {
+  if (!confirm('This will delete all rows from all 8 tables. Are you sure?')) return;
+  const baseUrl = getBase();
+  const token = getToken();
+  if (!baseUrl || !token) return;
+
+  document.getElementById('clearBtn').disabled = true;
+  document.getElementById('logBox').innerHTML = '';
+  if (!logVisible) { document.getElementById('logBox').style.display = 'block'; logVisible = true; }
+
+  log('[CLEAR] Starting data clear...', 'warn');
+
+  for (let i = 0; i < TABLE_DEFS.length; i++) {
+    const t = TABLE_DEFS[i];
+    const tableId = getTableId(t.idField);
+    if (!tableId) continue;
+    const records = SAMPLE_DATA[t.key] || [];
+    setTableStatus(i, 'clearing...', 'loading');
+    let cleared = 0;
+    for (const record of records) {
+      try {
+        const res = await fetch(`${baseUrl}/api/v2/datatables/${tableId}/rows/${record.key}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok || res.status === 404) { cleared++; log(`  [DEL] ${record.key}`, 'warn'); }
+      } catch(e) { log(`  [ERR] ${record.key} — ${e.message}`, 'err'); }
+    }
+    setTableStatus(i, `${cleared} cleared`, 'partial');
+  }
+
+  log('[CLEAR] Done.', 'warn');
+  document.getElementById('clearBtn').disabled = false;
+  document.getElementById('statusMsg').textContent = 'All data cleared.';
+  document.getElementById('statusMsg').className = 'status-msg';
+}
+
+renderTableIdInputs();
+renderTableMap();
+</script>
+</body>
+</html>
